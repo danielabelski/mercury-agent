@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import readline from 'node:readline';
 import chalk from 'chalk';
-import { loadConfig, saveConfig, isSetupComplete, getMercuryHome } from './utils/config.js';
+import { loadConfig, saveConfig, isSetupComplete, getMercuryHome, ensureCreatorField } from './utils/config.js';
 import { logger } from './utils/logger.js';
 import { Identity } from './soul/identity.js';
 import { ShortTermMemory, LongTermMemory, EpisodicMemory } from './memory/store.js';
@@ -125,7 +125,8 @@ async function onboarding(): Promise<void> {
 }
 
 async function runAgent(): Promise<void> {
-  const config = loadConfig();
+  let config = loadConfig();
+  config = ensureCreatorField(config);
   const name = config.identity.name;
 
   banner();

@@ -150,6 +150,14 @@ export function isSetupComplete(): boolean {
   return config.identity.owner.length > 0;
 }
 
+export function ensureCreatorField(config: MercuryConfig): MercuryConfig {
+  if (!config.identity.creator && config.identity.owner) {
+    config.identity.creator = 'Cosmic Stack';
+    saveConfig(config);
+  }
+  return config;
+}
+
 function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
   const result = { ...target };
   for (const key in source) {
