@@ -1,7 +1,7 @@
 {
-  "name": "mercury",
+  "name": "@cosmicstack/mercury-agent",
   "version": "0.1.0",
-  "description": "Mercury — an AI agent for personal tasks. Soul-driven, token-efficient, always on.",
+  "description": "Soul-driven AI agent with permission-hardened tools, token budgets, and multi-channel access. Runs 24/7 from CLI or Telegram.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -14,16 +14,45 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "ai",
     "agent",
+    "ai-agent",
     "cli",
     "telegram",
-    "personal-assistant"
+    "telegram-bot",
+    "personal-assistant",
+    "soul-driven",
+    "token-budget",
+    "permissions",
+    "scheduler",
+    "cron",
+    "skill-system",
+    "deepseek",
+    "openai",
+    "anthropic",
+    "llm"
   ],
+  "author": "Cosmic Stack",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cosmicstack-labs/mercury-agent.git"
+  },
+  "homepage": "https://mercury.cosmicstack.org",
+  "bugs": {
+    "url": "https://github.com/cosmicstack-labs/mercury-agent/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.0",
     "@ai-sdk/openai": "^1.3.0",

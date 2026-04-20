@@ -9,7 +9,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   minify: false,
-  banner: {},
+  banner: { js: "#!/usr/bin/env node" },
   external: [
     "react",
     "ink",

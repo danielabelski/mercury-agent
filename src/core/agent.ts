@@ -1,5 +1,5 @@
 import { generateText, streamText } from 'ai';
-import type { ChannelMessage } from '../types/channel.js';
+import type { ChannelMessage, ChannelType } from '../types/channel.js';
 import type { ProviderRegistry } from '../providers/registry.js';
 import type { Identity } from '../soul/identity.js';
 import type { ShortTermMemory, LongTermMemory, EpisodicMemory } from '../memory/store.js';
@@ -103,10 +103,11 @@ export class Agent {
     this.lifecycle.transition('thinking');
     const startTime = Date.now();
 
-    const isInternal = msg.channelType === 'internal';
-    if (isInternal) {
-      this.capabilities.permissions.setAutoApproveAll(true);
-    }
+      const isInternal = msg.channelType === 'internal';
+      const isScheduled = msg.senderId === 'system' && msg.channelType !== 'internal';
+      if (isInternal || isScheduled) {
+        this.capabilities.permissions.setAutoApproveAll(true);
+      }
 
     try {
       const trimmed = msg.content.trim();
@@ -169,6 +170,8 @@ export class Agent {
       if (channel) {
         await channel.typing(msg.channelId).catch(() => {});
       }
+
+      this.capabilities.setChannelContext(msg.channelId, msg.channelType);
 
       const fallbackIterator = this.providers.getFallbackIterator();
       let result: any = null;
@@ -302,7 +305,7 @@ export class Agent {
       logger.error({ err }, 'Error handling message');
       this.lifecycle.transition('idle');
     } finally {
-      if (isInternal) {
+      if (isInternal || isScheduled) {
         this.capabilities.permissions.setAutoApproveAll(false);
       }
       this.capabilities.permissions.clearElevation();
@@ -323,11 +326,11 @@ export class Agent {
     return prompt;
   }
 
-  async processInternalPrompt(prompt: string, channelId?: string): Promise<void> {
+  async processInternalPrompt(prompt: string, channelId?: string, channelType?: string): Promise<void> {
     const syntheticMsg: ChannelMessage = {
       id: `internal-${Date.now().toString(36)}`,
       channelId: channelId || 'internal',
-      channelType: 'internal',
+      channelType: (channelType || 'internal') as ChannelType,
       senderId: 'system',
       content: prompt,
       timestamp: Date.now(),
@@ -336,7 +339,7 @@ export class Agent {
   }
 
   private async handleScheduledTask(manifest: ScheduledTaskManifest): Promise<void> {
-    logger.info({ task: manifest.id }, 'Processing scheduled task');
+    logger.info({ task: manifest.id, channel: manifest.sourceChannelType }, 'Processing scheduled task');
     try {
       let prompt = manifest.prompt || '';
       if (manifest.skillName) {
@@ -346,7 +349,7 @@ export class Agent {
       if (!prompt) {
         prompt = `Execute scheduled task: ${manifest.description}`;
       }
-      await this.processInternalPrompt(prompt);
+      await this.processInternalPrompt(prompt, manifest.sourceChannelId, manifest.sourceChannelType);
     } catch (err) {
       logger.error({ err, task: manifest.id }, 'Scheduled task execution failed');
     }

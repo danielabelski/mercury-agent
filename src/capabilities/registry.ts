@@ -35,12 +35,23 @@ export class CapabilityRegistry {
   private scheduler?: Scheduler;
   private tokenBudget?: TokenBudget;
   private sendFileHandler?: (filePath: string) => Promise<void>;
+  private currentChannelId = 'cli';
+  private currentChannelType = 'cli';
 
   constructor(skillLoader?: SkillLoader, scheduler?: Scheduler, tokenBudget?: TokenBudget) {
     this.permissions = new PermissionManager();
     this.skillLoader = skillLoader;
     this.scheduler = scheduler;
     this.tokenBudget = tokenBudget;
+  }
+
+  setChannelContext(channelId: string, channelType: string): void {
+    this.currentChannelId = channelId;
+    this.currentChannelType = channelType;
+  }
+
+  getChannelContext(): { channelId: string; channelType: string } {
+    return { channelId: this.currentChannelId, channelType: this.currentChannelType };
   }
 
   setSendFileHandler(handler: (filePath: string) => Promise<void>): void {
@@ -79,7 +90,7 @@ export class CapabilityRegistry {
     }
 
     if (this.scheduler) {
-      this.tools.schedule_task = createScheduleTaskTool(this.scheduler);
+      this.tools.schedule_task = createScheduleTaskTool(this.scheduler, () => this.getChannelContext());
       this.tools.list_scheduled_tasks = createListTasksTool(this.scheduler);
       this.tools.cancel_scheduled_task = createCancelTaskTool(this.scheduler);
       logger.info('Scheduler tools registered');

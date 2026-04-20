@@ -22,6 +22,8 @@ export interface ScheduledTaskManifest {
   delaySeconds?: number;
   executeAt?: string;
   createdAt: string;
+  sourceChannelId?: string;
+  sourceChannelType?: string;
 }
 
 const SCHEDULES_FILE = 'schedules.yaml';

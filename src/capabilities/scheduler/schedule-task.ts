@@ -3,7 +3,7 @@ import { z } from 'zod';
 import cron from 'node-cron';
 import type { Scheduler, ScheduledTaskManifest } from '../../core/scheduler.js';
 
-export function createScheduleTaskTool(scheduler: Scheduler) {
+export function createScheduleTaskTool(scheduler: Scheduler, getContext: () => { channelId: string; channelType: string }) {
   return tool({
     description: 'Schedule a task. Use "cron" for recurring tasks (e.g. "0 9 * * *" for daily at 9am) or "delay_seconds" for one-shot delayed tasks (e.g. 15 for "remind me in 15 seconds"). Provide exactly one of cron or delay_seconds.',
     parameters: z.object({
@@ -26,6 +26,7 @@ export function createScheduleTaskTool(scheduler: Scheduler) {
       }
 
       const id = `task-${Date.now().toString(36)}`;
+      const ctx = getContext();
 
       if (delay_seconds) {
         const manifest: ScheduledTaskManifest = {
@@ -36,6 +37,8 @@ export function createScheduleTaskTool(scheduler: Scheduler) {
           delaySeconds: delay_seconds,
           executeAt: new Date(Date.now() + delay_seconds * 1000).toISOString(),
           createdAt: new Date().toISOString(),
+          sourceChannelId: ctx.channelId,
+          sourceChannelType: ctx.channelType,
         };
 
         scheduler.addDelayedTask(manifest);
@@ -56,6 +59,8 @@ export function createScheduleTaskTool(scheduler: Scheduler) {
         prompt,
         skillName: skill_name,
         createdAt: new Date().toISOString(),
+        sourceChannelId: ctx.channelId,
+        sourceChannelType: ctx.channelType,
       };
 
       scheduler.addPersistedTask(manifest);
