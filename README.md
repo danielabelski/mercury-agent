@@ -33,6 +33,12 @@ mercury
 
 First run triggers the setup wizard — enter your name, an API key, and optionally a Telegram bot token. Takes 30 seconds.
 
+To reconfigure later (change keys, name, settings):
+
+```bash
+mercury doctor
+```
+
 ## Why Mercury?
 
 Every AI agent can read files, run commands, and fetch URLs. Most do it silently. **Mercury asks first.**
@@ -41,8 +47,90 @@ Every AI agent can read files, run commands, and fetch URLs. Most do it silently
 - **Soul-driven** — Personality defined by markdown files you own (`soul.md`, `persona.md`, `taste.md`, `heartbeat.md`). No corporate wrapper.
 - **Token-aware** — Daily budget enforcement. Auto-concise when over 70%. `/budget` command to check, reset, or override.
 - **Multi-channel** — CLI with real-time streaming. Telegram with HTML formatting, file uploads, and typing indicators.
-- **Always on** — Cron scheduling, delayed reminders, heartbeat monitoring, and proactive notifications.
+- **Always on** — Run as a background daemon on any OS. Auto-restarts on crash. Starts on boot. Cron scheduling, heartbeat monitoring, and proactive notifications.
 - **Extensible** — Install community skills with a single command. Schedule skills as recurring tasks. Based on the [Agent Skills](https://agentskills.io) specification.
+
+## Daemon Mode
+
+**One command to make Mercury persistent:**
+
+```bash
+mercury up
+```
+
+This installs the system service (if not installed), starts the background daemon, and ensures Mercury is running. Use this as your go-to command.
+
+If Mercury is already running, `mercury up` just confirms it and shows the PID.
+
+### Other daemon commands
+
+```bash
+mercury restart      # Restart the background process
+mercury stop         # Stop the background process
+mercury start -d     # Start in background (without service install)
+mercury logs         # View recent daemon logs
+mercury status       # Show if daemon is running
+```
+
+Daemon mode includes built-in crash recovery — if the process crashes, it restarts automatically with exponential backoff (up to 10 restarts per minute).
+
+### System Service (auto-start on boot)
+
+`mercury up` installs this automatically. You can also manage it directly:
+
+```bash
+mercury service install
+```
+
+| Platform | Method | Requires Admin |
+|----------|--------|---------------|
+| **macOS** | LaunchAgent (`~/Library/LaunchAgents/`) | No |
+| **Linux** | systemd user unit (`~/.config/systemd/user/`) | No (linger for boot) |
+| **Windows** | Task Scheduler (`schtasks`) | No |
+
+```bash
+mercury service status     # Check if service is running
+mercury service uninstall  # Remove the system service
+```
+
+In daemon mode, Telegram becomes your primary channel — CLI is log-only since there's no terminal for input.
+
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `mercury up` | **Recommended.** Install service + start daemon + ensure running |
+| `mercury` | Start the agent (same as `mercury start`) |
+| `mercury start` | Start in foreground |
+| `mercury start -d` | Start in background (daemon mode) |
+| `mercury restart` | Restart the background process |
+| `mercury stop` | Stop a background process |
+| `mercury logs` | View recent daemon logs |
+| `mercury doctor` | Reconfigure (Enter to keep current values) |
+| `mercury setup` | Re-run the setup wizard |
+| `mercury status` | Show config and daemon status |
+| `mercury help` | Show full manual |
+| `mercury service install` | Install as system service (auto-start on boot) |
+| `mercury service uninstall` | Uninstall system service |
+| `mercury service status` | Show system service status |
+| `mercury --verbose` | Start with debug logging |
+
+## In-Chat Commands
+
+Type these during a conversation — they don't consume API tokens. Work on both CLI and Telegram.
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show the full manual |
+| `/status` | Show agent config, budget, and usage |
+| `/tools` | List all loaded tools |
+| `/skills` | List installed skills |
+| `/stream` | Toggle Telegram text streaming |
+| `/stream off` | Disable streaming (single message) |
+| `/budget` | Show token budget status |
+| `/budget override` | Override budget for one request |
+| `/budget reset` | Reset usage to zero |
+| `/budget set <n>` | Change daily token budget |
 
 ## Built-in Tools
 
@@ -83,6 +171,8 @@ All runtime data lives in `~/.mercury/` — not in your project directory.
 | `~/.mercury/schedules.yaml` | Scheduled tasks |
 | `~/.mercury/token-usage.json` | Daily token usage tracking |
 | `~/.mercury/memory/` | Short-term, long-term, episodic memory |
+| `~/.mercury/daemon.pid` | Background process PID |
+| `~/.mercury/daemon.log` | Daemon mode logs |
 
 ## Provider Fallback
 
@@ -98,6 +188,8 @@ Configure multiple LLM providers. Mercury tries them in order and falls back aut
 - **Vercel AI SDK v4** — `generateText` + `streamText`, 10-step agentic loop, provider fallback
 - **grammY** — Telegram bot with typing indicators and file uploads
 - **Flat-file persistence** — No database. YAML + JSON in `~/.mercury/`
+- **Daemon manager** — Background spawn + PID file + watchdog crash recovery
+- **System services** — macOS LaunchAgent, Linux systemd, Windows Task Scheduler
 
 ## License
 

@@ -81,6 +81,7 @@
         <a href="#demo">Demo</a>
         <a href="#capabilities">Capabilities</a>
         <a href="#compare">Compare</a>
+        <a href="docs.html">Docs</a>
         <a href="https://github.com/cosmicstack-labs/mercury-agent" class="nav-cta" target="_blank"
           rel="noopener">GitHub</a>
       </div>
@@ -137,8 +138,7 @@
         <div class="feature-card" data-reveal>
           <div class="feature-icon">♾</div>
           <h3>Always On</h3>
-          <p>Cron scheduling, delayed tasks, and a heartbeat system that monitors budget and upcoming tasks. Mercury
-            runs 24/7 and notifies you proactively via Telegram or CLI.</p>
+          <p>Cron scheduling, delayed tasks, and a heartbeat system that monitors budget and upcoming tasks. Run as a background daemon on macOS, Linux, or Windows. Auto-starts on boot, auto-restarts on crash.</p>
         </div>
         <div class="feature-card" data-reveal>
           <div class="feature-icon">📡</div>
@@ -189,7 +189,7 @@
           <div class="terminal-inline">
             <code>mercury start</code>
           </div>
-          <p>Mercury wakes up, loads your soul files, restores scheduled tasks, and is live. Start talking.</p>
+          <p>Mercury wakes up, loads your soul files, restores scheduled tasks, and is live. Start talking. Or use <code>mercury start -d</code> for background mode.</p>
         </div>
       </div>
     </div>
@@ -391,6 +391,52 @@
     </div>
   </section>
 
+  <section id="daemon" class="section section-dark">
+    <div class="container">
+      <h2 class="section-title">Always On. Any Platform.</h2>
+      <p class="section-sub">Run Mercury as a background daemon. Auto-starts on boot. Auto-restarts on crash.</p>
+      <div class="terminal-window" style="max-width: 680px; margin: 0 auto 48px;">
+        <div class="terminal-bar">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body" style="min-height: auto; padding: 16px 24px;">
+          <p style="margin:0;color:var(--gray);">$ <span style="color:var(--cyan);">mercury up</span></p>
+          <p style="margin:0;color:var(--cyan);">Installing Mercury as a system service...</p>
+          <p style="margin:0;color:var(--green);">Mercury service installed (LaunchAgent)</p>
+          <p style="margin:0;color:var(--cyan);">Starting Mercury in background...</p>
+          <p style="margin:0;color:var(--white);">Mercury started in background (PID: 48291)</p>
+          <p style="margin:0;color:var(--gray-dim);">Auto-starts on login. Auto-restarts on crash.</p>
+        </div>
+      </div>
+      <div class="caps-grid" style="max-width: 900px; margin: 0 auto;">
+        <div class="cap-group" data-reveal>
+          <h3>Commands</h3>
+          <ul>
+            <li><code>mercury up</code> — Install service + start daemon</li>
+            <li><code>mercury start</code> — Foreground mode</li>
+            <li><code>mercury restart</code> — Restart background process</li>
+            <li><code>mercury stop</code> — Stop background process</li>
+            <li><code>mercury doctor</code> — Reconfigure (Enter keeps values)</li>
+            <li><code>/help</code> <code>/status</code> <code>/budget</code> — In-chat commands</li>
+          </ul>
+        </div>
+        <div class="cap-group" data-reveal>
+          <h3>Platform Support</h3>
+          <ul>
+            <li><strong>macOS</strong> — LaunchAgent (no sudo)</li>
+            <li><strong>Linux</strong> — systemd user unit (no sudo)</li>
+            <li><strong>Windows</strong> — Task Scheduler (no admin)</li>
+            <li><strong>Crash recovery</strong> — Exponential backoff watchdog</li>
+            <li><strong>Zero deps</strong> — No PM2, forever, or NSSM needed</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="architecture" class="section section-dark">
     <div class="container">
       <h2 class="section-title">Under the Hood</h2>
@@ -452,6 +498,7 @@
         <span class="footer-tagline">by Cosmic Stack</span>
       </div>
       <div class="footer-links">
+        <a href="docs.html">Docs</a>
         <a href="https://mercury.cosmicstack.org">mercury.cosmicstack.org</a>
         <a href="https://github.com/cosmicstack-labs/mercury-agent">GitHub</a>
         <a href="https://github.com/cosmicstack-labs/mercury-agent/issues">Issues</a>

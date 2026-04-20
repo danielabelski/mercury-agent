@@ -48,11 +48,20 @@ export function getManual(): string {
   sections.push('');
 
   const commands = [
+    ['mercury up', 'Start persistently (install service + daemon)'],
     ['mercury', 'Start the agent (same as mercury start)'],
-    ['mercury start', 'Start the agent'],
+    ['mercury start', 'Start the agent in foreground'],
+    ['mercury start -d', 'Start in background (daemon mode)'],
+    ['mercury restart', 'Restart a background process'],
+    ['mercury stop', 'Stop a background process'],
+    ['mercury logs', 'Show recent daemon logs'],
+    ['mercury doctor', 'Reconfigure settings (Enter keeps current)'],
     ['mercury setup', 'Re-run the setup wizard'],
-    ['mercury status', 'Show current configuration'],
+    ['mercury status', 'Show config and daemon status'],
     ['mercury help', 'Show this manual'],
+    ['mercury service install', 'Install as system service (auto-start)'],
+    ['mercury service uninstall', 'Uninstall system service'],
+    ['mercury service status', 'Show system service status'],
     ['mercury --verbose', 'Start with debug logging on stderr'],
   ];
 
@@ -70,6 +79,9 @@ export function getManual(): string {
     ['/status', 'Show config and budget info'],
     ['/tools', 'List currently loaded tools'],
     ['/skills', 'List installed skills'],
+    ['/stream', 'Toggle text streaming on/off (Telegram)'],
+    ['/stream on', 'Enable streaming (live text updates)'],
+    ['/stream off', 'Disable streaming (single message)'],
   ];
 
   for (const [cmd, desc] of chat) {
