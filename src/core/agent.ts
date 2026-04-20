@@ -140,13 +140,18 @@ export class Agent {
         const sub = trimmed.slice('/stream'.length).trim().toLowerCase();
         if (sub === 'off') {
           this.telegramStreaming = false;
-          const ch = this.channels.get(msg.channelType as any);
-          if (ch) await ch.send('Telegram streaming disabled. Responses will arrive as a single message.', msg.channelId);
-        } else {
+        } else if (sub === 'on') {
           this.telegramStreaming = true;
-          const ch = this.channels.get(msg.channelType as any);
-          if (ch) await ch.send('Telegram streaming enabled. Responses will appear progressively.', msg.channelId);
+        } else {
+          this.telegramStreaming = !this.telegramStreaming;
         }
+        const ch = this.channels.get(msg.channelType as any);
+        if (ch) await ch.send(
+          this.telegramStreaming
+            ? 'Telegram streaming enabled. Responses will appear progressively.'
+            : 'Telegram streaming disabled. Responses will arrive as a single message.',
+          msg.channelId,
+        );
         this.lifecycle.transition('idle');
         return;
       }
@@ -601,12 +606,28 @@ export class Agent {
       return true;
     }
 
-    if (cmd === '/stream' || cmd === '/stream on') {
+    if (cmd === '/stream on') {
       this.telegramStreaming = true;
       await channel.send('Telegram streaming enabled. Responses will appear progressively.', channelId);
       return true;
     }
 
+    if (cmd === '/stream off') {
+      this.telegramStreaming = false;
+      await channel.send('Telegram streaming disabled. Responses will arrive as a single message.', channelId);
+      return true;
+    }
+
+    if (cmd === '/stream') {
+      this.telegramStreaming = !this.telegramStreaming;
+      await channel.send(
+        this.telegramStreaming
+          ? 'Telegram streaming enabled. Responses will appear progressively.'
+          : 'Telegram streaming disabled. Responses will arrive as a single message.',
+        channelId,
+      );
+      return true;
+    }
     if (cmd === '/stream off') {
       this.telegramStreaming = false;
       await channel.send('Telegram streaming disabled. Responses will arrive as a single message.', channelId);
