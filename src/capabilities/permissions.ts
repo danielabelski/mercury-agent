@@ -130,10 +130,19 @@ export class PermissionManager {
   private autoApproveAll = false;
   private elevatedCommands: Set<string> = new Set();
   private pendingApprovals: Set<string> = new Set();
+  private currentChannelType: string = 'cli';
 
   constructor() {
     this.cwd = process.cwd();
     this.manifest = this.load();
+  }
+
+  setCurrentChannelType(type: string): void {
+    this.currentChannelType = type;
+  }
+
+  getCurrentChannelType(): string {
+    return this.currentChannelType;
   }
 
   onAsk(handler: (prompt: string) => Promise<string>): void {
@@ -289,8 +298,31 @@ export class PermissionManager {
 
     for (const pattern of shell.needsApproval) {
       if (this.matchPattern(trimmed, pattern)) {
+        if (this.currentChannelType === 'telegram' && this.askHandler) {
+          const result = await this.askHandler(`Run command: ${trimmed}`);
+          if (result === 'yes') {
+            return { allowed: true, needsApproval: false };
+          }
+          if (result === 'always') {
+            this.addApprovedCommand(baseCmd);
+            return { allowed: true, needsApproval: false };
+          }
+          return { allowed: false, reason: `User denied: ${trimmed}`, needsApproval: false };
+        }
         return { allowed: false, reason: `Command requires approval: matches "${pattern}"`, needsApproval: true };
       }
+    }
+
+    if (this.currentChannelType === 'telegram' && this.askHandler) {
+      const result = await this.askHandler(`Run command: ${trimmed}`);
+      if (result === 'yes') {
+        return { allowed: true, needsApproval: false };
+      }
+      if (result === 'always') {
+        this.addApprovedCommand(baseCmd);
+        return { allowed: true, needsApproval: false };
+      }
+      return { allowed: false, reason: `User denied: ${trimmed}`, needsApproval: false };
     }
 
     return { allowed: false, reason: 'Command not in auto-approve list — requires approval', needsApproval: true };

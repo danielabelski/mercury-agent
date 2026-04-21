@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { Bot, InputFile } from 'grammy';
+import { Bot, InputFile, InlineKeyboard } from 'grammy';
 import { autoRetry } from '@grammyjs/auto-retry';
 import type { ChannelMessage } from '../types/channel.js';
 import { BaseChannel } from './base.js';
@@ -10,12 +10,15 @@ import { mdToTelegram } from '../utils/markdown.js';
 
 const MAX_MESSAGE_LENGTH = 4096;
 
+type ApprovalResolver = (response: 'yes' | 'always' | 'no') => void;
+
 export class TelegramChannel extends BaseChannel {
   readonly type = 'telegram' as const;
   private bot: Bot | null = null;
   private ownerChatId: number | null = null;
   private typingInterval: NodeJS.Timeout | null = null;
   private chatCommandContext?: import('../capabilities/registry.js').ChatCommandContext;
+  private pendingApprovals: Map<string, ApprovalResolver> = new Map();
 
   constructor(private config: MercuryConfig) {
     super();
@@ -53,6 +56,21 @@ export class TelegramChannel extends BaseChannel {
         metadata: { chatId, messageId: ctx.message.message_id },
       };
       this.emit(msg);
+    });
+
+    bot.on('callback_query:data', async (ctx) => {
+      const data = ctx.callbackQuery.data;
+      const resolver = this.pendingApprovals.get(data);
+      if (!resolver) {
+        await ctx.answerCallbackQuery({ text: 'Expired' });
+        return;
+      }
+
+      this.pendingApprovals.delete(data);
+
+      const action = data.split(':')[1] as 'yes' | 'always' | 'no';
+      resolver(action);
+      await ctx.answerCallbackQuery({ text: action === 'no' ? 'Denied' : 'Approved' });
     });
 
     bot.catch((err) => {
@@ -260,6 +278,43 @@ export class TelegramChannel extends BaseChannel {
     } finally {
       this.stopTypingLoop();
     }
+  }
+
+  async askPermission(prompt: string, targetId?: string): Promise<string> {
+    const chatId = this.parseChatId(targetId);
+    if (!chatId || !this.bot) return 'no';
+
+    const id = `perm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const keyboard = new InlineKeyboard()
+      .text('Allow', `${id}:yes`)
+      .text('Always', `${id}:always`)
+      .text('Deny', `${id}:no`);
+
+    const html = mdToTelegram(prompt);
+
+    try {
+      await this.bot.api.sendMessage(chatId, html, {
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+      });
+    } catch {
+      await this.bot.api.sendMessage(chatId, this.stripHtml(html), {
+        reply_markup: keyboard,
+      });
+    }
+
+    return new Promise((resolve) => {
+      this.pendingApprovals.set(`${id}:yes`, () => resolve('yes'));
+      this.pendingApprovals.set(`${id}:always`, () => resolve('always'));
+      this.pendingApprovals.set(`${id}:no`, () => resolve('no'));
+
+      setTimeout(() => {
+        this.pendingApprovals.delete(`${id}:yes`);
+        this.pendingApprovals.delete(`${id}:always`);
+        this.pendingApprovals.delete(`${id}:no`);
+        resolve('no');
+      }, 120_000);
+    });
   }
 
   private escapeHtml(text: string): string {

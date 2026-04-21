@@ -313,12 +313,18 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
   await agent.wake();
 
   const cliChannel = channels.get('cli') as CLIChannel | undefined;
+  const tgChannel = channels.get('telegram') as TelegramChannel | undefined;
 
-  if (cliChannel) {
-    capabilities.permissions.onAsk(async (prompt: string) => {
+  capabilities.permissions.onAsk(async (prompt: string) => {
+    const channelType = capabilities.permissions.getCurrentChannelType();
+    if (channelType === 'telegram' && tgChannel) {
+      return tgChannel.askPermission(prompt);
+    }
+    if (cliChannel) {
       return cliChannel.askPermission(prompt);
-    });
-  }
+    }
+    return 'no';
+  });
 
   const activeCh = channels.getActiveChannels();
   const toolNames = capabilities.getToolNames();

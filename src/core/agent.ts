@@ -215,6 +215,7 @@ export class Agent {
       }
 
       this.capabilities.setChannelContext(msg.channelId, msg.channelType);
+      this.capabilities.permissions.setCurrentChannelType(msg.channelType);
 
       const fallbackIterator = this.providers.getFallbackIterator();
       let result: any = null;
