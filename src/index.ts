@@ -571,6 +571,22 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
     }
   });
 
+  capabilities.setSendMessageHandler(async (content: string) => {
+    const telegram = channels.get('telegram');
+    const pairedChatId = config.channels.telegram.pairedChatId;
+    const pairedUserId = config.channels.telegram.pairedUserId;
+
+    if (!config.channels.telegram.enabled || !telegram) {
+      throw new Error('Telegram is not configured. Add a bot token in setup or run `mercury doctor`.');
+    }
+
+    if (pairedChatId == null || pairedUserId == null) {
+      throw new Error('Telegram is not paired. Complete the pairing flow with /start or /pair from the Telegram owner account.');
+    }
+
+    await telegram.send(content, `telegram:${pairedChatId}`);
+  });
+
   capabilities.registerAll();
 
   const agent = new Agent(

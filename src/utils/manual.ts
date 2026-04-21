@@ -19,6 +19,7 @@ export function getManual(): string {
     ['edit_file', 'Replace specific text in a file', 'path, old_string, new_string'],
     ['list_dir', 'List directory contents', 'path'],
     ['delete_file', 'Delete a file', 'path'],
+    ['send_message', 'Send a message to the paired Telegram owner', 'content'],
     ['run_command', 'Execute a shell command', 'command'],
     ['approve_command', 'Permanently approve a command type', 'command (e.g. "curl")'],
     ['fetch_url', 'Fetch a URL and return content', 'url, format? (text/markdown)'],

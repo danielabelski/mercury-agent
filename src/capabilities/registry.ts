@@ -7,6 +7,7 @@ import { createListDirTool } from './filesystem/list-dir.js';
 import { createDeleteFileTool } from './filesystem/delete-file.js';
 import { createEditFileTool } from './filesystem/edit-file.js';
 import { createSendFileTool } from './filesystem/send-file.js';
+import { createSendMessageTool } from './messaging/send-message.js';
 import { createRunCommandTool } from './shell/run-command.js';
 import { createApproveCommandTool } from './shell/approve-command.js';
 import { createInstallSkillTool } from './skills/install-skill.js';
@@ -43,6 +44,7 @@ export class CapabilityRegistry {
   private scheduler?: Scheduler;
   private tokenBudget?: TokenBudget;
   private sendFileHandler?: (filePath: string) => Promise<void>;
+  private sendMessageHandler?: (content: string) => Promise<void>;
   private currentChannelId = 'cli';
   private currentChannelType = 'cli';
   private chatCommandContext?: ChatCommandContext;
@@ -75,6 +77,10 @@ export class CapabilityRegistry {
     this.sendFileHandler = handler;
   }
 
+  setSendMessageHandler(handler: (content: string) => Promise<void>): void {
+    this.sendMessageHandler = handler;
+  }
+
   registerAll(): void {
     const manifest = this.permissions.getManifest();
 
@@ -91,6 +97,11 @@ export class CapabilityRegistry {
       }
 
       logger.info('Filesystem tools registered');
+    }
+
+    if (this.sendMessageHandler) {
+      this.tools.send_message = createSendMessageTool(this.sendMessageHandler);
+      logger.info('Messaging tool registered');
     }
 
     if (manifest.capabilities.shell.enabled) {
