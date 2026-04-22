@@ -25,6 +25,8 @@ import { startBackground, stopDaemon, showLogs, getDaemonStatus, restartDaemon, 
 import { installService, uninstallService, showServiceStatus, isServiceInstalled } from './cli/service.js';
 import { runWithWatchdog } from './cli/watchdog.js';
 import { setGitHubToken } from './utils/github.js';
+import { selectWithArrowKeys } from './utils/arrow-select.js';
+import { ProviderModelFetchError, fetchProviderModelCatalog } from './utils/provider-models.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkgVersion = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8')).version;
@@ -246,6 +248,133 @@ function validateModelName(value: string): string | null {
   return null;
 }
 
+async function chooseProviderModel(
+  providerLabel: string,
+  recommendedModel: string,
+  models: string[],
+): Promise<string> {
+  const selection = await selectWithArrowKeys(
+    `${providerLabel} Models`,
+    [
+      {
+        value: '__default__',
+        label: `Use provider default (${recommendedModel})`,
+      },
+      ...models.map((model) => ({
+        value: model,
+        label: model,
+      })),
+      {
+        value: '__custom__',
+        label: 'Enter a custom model name',
+      },
+    ],
+  );
+
+  if (!selection || selection === '__default__') {
+    return recommendedModel;
+  }
+
+  if (selection !== '__custom__') {
+    return selection;
+  }
+
+  while (true) {
+    const customModel = await ask(chalk.white(`  ${providerLabel} model [Enter or "none" for ${recommendedModel}]: `));
+    if (!customModel || customModel.toLowerCase() === 'none') {
+      return recommendedModel;
+    }
+
+    const error = validateModelName(customModel);
+    if (!error) {
+      return customModel;
+    }
+
+    console.log(chalk.red(`  ${error}`));
+  }
+}
+
+async function promptApiKeyWithModelSelection(
+  config: MercuryConfig,
+  provider: ProviderName,
+  providerLabel: string,
+  prompt: string,
+  isReconfig: boolean,
+): Promise<{ apiKey?: string; model?: string; skipped: boolean }> {
+  const existingConfig = config.providers[provider];
+
+  while (true) {
+    const value = await ask(prompt);
+    if (!value) {
+      if (isReconfig && existingConfig.apiKey) {
+        return {
+          apiKey: existingConfig.apiKey,
+          model: existingConfig.model,
+          skipped: true,
+        };
+      }
+
+      return { skipped: true };
+    }
+
+    const formatError = validateApiKey(provider, value);
+    if (formatError) {
+      console.log(chalk.red(`  ${formatError}`));
+      continue;
+    }
+
+    console.log(chalk.dim(`  Validating ${providerLabel} and fetching models...`));
+    try {
+      const catalog = await fetchProviderModelCatalog(provider, {
+        ...existingConfig,
+        apiKey: value,
+      });
+      const model = await chooseProviderModel(
+        providerLabel,
+        catalog.recommendedModel,
+        catalog.models,
+      );
+      return { apiKey: value, model, skipped: false };
+    } catch (error) {
+      const message = error instanceof ProviderModelFetchError
+        ? error.message
+        : `Mercury could not fetch models for ${providerLabel}. Please re-enter the key.`;
+      console.log(chalk.red(`  ${message}`));
+    }
+  }
+}
+
+async function promptOllamaLocalModelSelection(config: MercuryConfig): Promise<{ baseUrl?: string; model?: string; skipped: boolean }> {
+  const existingConfig = config.providers.ollamaLocal;
+
+  while (true) {
+    const baseUrl = (await promptValidatedValue(
+      chalk.white(`  Ollama Local base URL [${existingConfig.baseUrl}]: `),
+      validateBaseUrl,
+      existingConfig.baseUrl,
+    ))!;
+
+    console.log(chalk.dim('  Fetching Ollama Local models...'));
+    try {
+      const catalog = await fetchProviderModelCatalog('ollamaLocal', {
+        ...existingConfig,
+        baseUrl,
+      });
+      const model = await chooseProviderModel(
+        'Ollama Local',
+        catalog.recommendedModel,
+        catalog.models,
+      );
+      return { baseUrl, model, skipped: false };
+    } catch (error) {
+      const message = error instanceof ProviderModelFetchError
+        ? error.message
+        : 'Mercury could not fetch Ollama Local models. Please check the base URL and try again.';
+      console.log(chalk.red(`  ${message}`));
+    }
+  }
+}
+
 async function promptValidatedValue(
   prompt: string,
   validator: (value: string) => string | null,
@@ -343,14 +472,16 @@ async function configure(existingConfig?: MercuryConfig): Promise<void> {
     for (const provider of selectedProviders) {
       if (provider === 'deepseek') {
         const mask = isReconfig && config.providers.deepseek.apiKey ? ` [${maskKey(config.providers.deepseek.apiKey)}]` : '';
-        const key = await promptValidatedValue(
+        const result = await promptApiKeyWithModelSelection(
+          config,
+          'deepseek',
+          'DeepSeek',
           chalk.white(`  DeepSeek API key${mask}${isReconfig ? '' : ' (Enter to skip)'}: `),
-          (value) => validateApiKey('deepseek', value),
-          isReconfig ? config.providers.deepseek.apiKey : undefined,
-          { allowSkip: true },
+          isReconfig,
         );
-        if (key) {
-          config.providers.deepseek.apiKey = key;
+        if (!result.skipped && result.apiKey && result.model) {
+          config.providers.deepseek.apiKey = result.apiKey;
+          config.providers.deepseek.model = result.model;
           config.providers.deepseek.enabled = true;
         }
         continue;
@@ -358,14 +489,16 @@ async function configure(existingConfig?: MercuryConfig): Promise<void> {
 
       if (provider === 'openai') {
         const mask = isReconfig && config.providers.openai.apiKey ? ` [${maskKey(config.providers.openai.apiKey)}]` : '';
-        const key = await promptValidatedValue(
+        const result = await promptApiKeyWithModelSelection(
+          config,
+          'openai',
+          'OpenAI',
           chalk.white(`  OpenAI API key${mask}${isReconfig ? '' : ' (Enter to skip)'}: `),
-          (value) => validateApiKey('openai', value),
-          isReconfig ? config.providers.openai.apiKey : undefined,
-          { allowSkip: true },
+          isReconfig,
         );
-        if (key) {
-          config.providers.openai.apiKey = key;
+        if (!result.skipped && result.apiKey && result.model) {
+          config.providers.openai.apiKey = result.apiKey;
+          config.providers.openai.model = result.model;
           config.providers.openai.enabled = true;
         }
         continue;
@@ -373,14 +506,16 @@ async function configure(existingConfig?: MercuryConfig): Promise<void> {
 
       if (provider === 'anthropic') {
         const mask = isReconfig && config.providers.anthropic.apiKey ? ` [${maskKey(config.providers.anthropic.apiKey)}]` : '';
-        const key = await promptValidatedValue(
+        const result = await promptApiKeyWithModelSelection(
+          config,
+          'anthropic',
+          'Anthropic',
           chalk.white(`  Anthropic API key${mask}${isReconfig ? '' : ' (Enter to skip)'}: `),
-          (value) => validateApiKey('anthropic', value),
-          isReconfig ? config.providers.anthropic.apiKey : undefined,
-          { allowSkip: true },
+          isReconfig,
         );
-        if (key) {
-          config.providers.anthropic.apiKey = key;
+        if (!result.skipped && result.apiKey && result.model) {
+          config.providers.anthropic.apiKey = result.apiKey;
+          config.providers.anthropic.model = result.model;
           config.providers.anthropic.enabled = true;
         }
         continue;
@@ -388,14 +523,16 @@ async function configure(existingConfig?: MercuryConfig): Promise<void> {
 
       if (provider === 'grok') {
         const mask = isReconfig && config.providers.grok.apiKey ? ` [${maskKey(config.providers.grok.apiKey)}]` : '';
-        const key = await promptValidatedValue(
+        const result = await promptApiKeyWithModelSelection(
+          config,
+          'grok',
+          'Grok',
           chalk.white(`  Grok API key${mask}${isReconfig ? '' : ' (Enter to skip)'}: `),
-          (value) => validateApiKey('grok', value),
-          isReconfig ? config.providers.grok.apiKey : undefined,
-          { allowSkip: true },
+          isReconfig,
         );
-        if (key) {
-          config.providers.grok.apiKey = key;
+        if (!result.skipped && result.apiKey && result.model) {
+          config.providers.grok.apiKey = result.apiKey;
+          config.providers.grok.model = result.model;
           config.providers.grok.enabled = true;
         }
         continue;
@@ -403,33 +540,28 @@ async function configure(existingConfig?: MercuryConfig): Promise<void> {
 
       if (provider === 'ollamaCloud') {
         const mask = isReconfig && config.providers.ollamaCloud.apiKey ? ` [${maskKey(config.providers.ollamaCloud.apiKey)}]` : '';
-        const key = await promptValidatedValue(
+        const result = await promptApiKeyWithModelSelection(
+          config,
+          'ollamaCloud',
+          'Ollama Cloud',
           chalk.white(`  Ollama Cloud API key${mask}${isReconfig ? '' : ' (Enter to skip)'}: `),
-          (value) => validateApiKey('ollamaCloud', value),
-          isReconfig ? config.providers.ollamaCloud.apiKey : undefined,
-          { allowSkip: true },
+          isReconfig,
         );
-        if (key) {
-          config.providers.ollamaCloud.apiKey = key;
+        if (!result.skipped && result.apiKey && result.model) {
+          config.providers.ollamaCloud.apiKey = result.apiKey;
+          config.providers.ollamaCloud.model = result.model;
           config.providers.ollamaCloud.enabled = true;
         }
         continue;
       }
 
       if (provider === 'ollamaLocal') {
-        config.providers.ollamaLocal.baseUrl = (await promptValidatedValue(
-          chalk.white(`  Ollama Local base URL [${config.providers.ollamaLocal.baseUrl}]: `),
-          validateBaseUrl,
-          config.providers.ollamaLocal.baseUrl,
-        ))!;
-
-        config.providers.ollamaLocal.model = (await promptValidatedValue(
-          chalk.white(`  Ollama Local model [${config.providers.ollamaLocal.model}]: `),
-          validateModelName,
-          config.providers.ollamaLocal.model,
-        ))!;
-
-        config.providers.ollamaLocal.enabled = true;
+        const result = await promptOllamaLocalModelSelection(config);
+        if (!result.skipped && result.baseUrl && result.model) {
+          config.providers.ollamaLocal.baseUrl = result.baseUrl;
+          config.providers.ollamaLocal.model = result.model;
+          config.providers.ollamaLocal.enabled = true;
+        }
       }
     }
 
@@ -607,8 +739,14 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
   }
 
   const available = providers.listAvailable();
+  const providerLabels = available.map((provider) => getProviderLabel(provider as ProviderName));
+  const providerModels = available.map((provider) => {
+    const key = provider as ProviderName;
+    return `${getProviderLabel(key)}: ${config.providers[key].model}`;
+  });
   if (!isDaemon) {
-    console.log(chalk.dim(`  Providers: ${available.join(', ')}`));
+    console.log(chalk.dim(`  Providers: ${providerLabels.join(', ')}`));
+    console.log(chalk.dim(`  Models: ${providerModels.join(' | ')}`));
   } else {
     logger.info({ providers: available }, 'Providers loaded');
   }
@@ -692,10 +830,6 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
   const toolNames = capabilities.getToolNames();
 
   if (!isDaemon) {
-    console.log(chalk.dim(`  Channels: ${activeCh.join(', ')}`));
-    console.log(chalk.dim(`  Tools: ${toolNames.join(', ')}`));
-    console.log(chalk.dim(`  Permissions: ${getMercuryHome()}/permissions.yaml`));
-    console.log(chalk.dim(`  Schedules: ${getMercuryHome()}/schedules.yaml`));
     if (config.identity.creator) {
       console.log(chalk.dim(`  Creator: ${config.identity.creator}`));
     }
