@@ -723,6 +723,19 @@ export class Agent {
 
     prompt += `\n\nEnvironment:\n- Platform: ${process.platform}\n- Working directory: ${this.capabilities.getCwd()}`;
 
+    if (this.userMemory) {
+      const summary = this.userMemory.getSummary();
+      prompt += `\n\nSecond Brain is ENABLED. You have a persistent, structured memory of ${summary.total} facts about this user.`;
+      prompt += `\nMemory types: identity, preference, goal, project, habit, decision, constraint, relationship, episode, reflection.`;
+      prompt += `\nRelevant memories are automatically injected before each message. You can reference them naturally (e.g. "I remember you prefer TypeScript").`;
+      prompt += `\nUsers can manage memory with: /memory (overview, search, pause learning, clear).`;
+      if (summary.learningPaused) {
+        prompt += `\nLearning is currently PAUSED — no new memories will be extracted from conversations until resumed.`;
+      }
+    } else {
+      prompt += '\n\nSecond Brain is DISABLED. Basic long-term memory (text search over facts) is still active.';
+    }
+
     const toolNames = this.capabilities.getToolNames();
     const githubTools = ['create_pr', 'review_pr', 'list_issues', 'create_issue', 'github_api'];
     const hasGitHub = githubTools.some(t => toolNames.includes(t));

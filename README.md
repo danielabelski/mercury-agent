@@ -185,15 +185,18 @@ CLI commands: `mercury telegram list|approve|reject|remove|promote|demote|reset`
 
 ## Second Brain
 
-Mercury builds a structured memory of facts about you, your preferences, and your project context — stored locally in SQLite with full-text search.
+Mercury builds a structured, persistent memory that grows with every conversation. Enabled by default, it automatically extracts, stores, and recalls facts about you.
 
-- **10 memory types** — preferences, relationships, project facts, decisions, routines, and more
-- **Automatic extraction** — after each conversation, Mercury pulls important facts and stores them
-- **Relevant recall** — only memories matching the current context are injected into the system prompt
-- **User controls** — `/memory` to view, search, and manage stored facts
-- **Auto-pruning** — stale entries are expired after 7 days of inactivity
+- **10 memory types** — identity, preference, goal, project, habit, decision, constraint, relationship, episode, reflection
+- **Automatic extraction** — after each conversation, Mercury pulls 0–3 facts with confidence, importance, and durability scores
+- **Relevant recall** — before each message, the top 5 matching memories (900-char budget) are injected into context
+- **Auto-consolidation** — every 60 min, Mercury builds a profile summary, active-state summary, and generates reflections from patterns
+- **Conflict resolution** — opposing memories are resolved by confidence (higher wins) or recency (newer wins)
+- **Auto-pruning** — active-scope memories stale after 21 days; inferred memories decay; low-confidence durable memories dismissed after 120 days
+- **User controls** — `/memory` for overview, search, pause, resume, and clear
+- **Disable** — `SECOND_BRAIN_ENABLED=false` env var or `memory.secondBrain.enabled: false` in config
 
-All memory stays on your machine in `~/.mercury/memory/second-brain.db`.
+All data stays on your machine in `~/.mercury/memory/second-brain/second-brain.db` (SQLite + FTS5).
 
 ## Configuration
 

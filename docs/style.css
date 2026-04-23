@@ -604,3 +604,24 @@ footer {
   .search-modal { margin: 0 12px; max-width: none; }
   .search-footer { display: none; }
 }
+
+/* ── Second Brain ── */
+.section-alt { background: #0c0c14; }
+.brain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 48px;
+}
+.brain-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 24px;
+  transition: all 0.3s ease;
+}
+.brain-card:hover { background: var(--bg-card-hover); border-color: var(--cyan-dim); transform: translateY(-2px); }
+.brain-card h3 { font-size: 1.15em; margin-bottom: 8px; color: var(--white); }
+.brain-card p { color: var(--gray); font-size: 0.95em; line-height: 1.65; }
+.brain-note { margin-top: 32px; text-align: center; color: var(--gray-dim); font-size: 0.88em; }
+.brain-note code { background: var(--bg-card); border: 1px solid var(--border); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: var(--cyan); }

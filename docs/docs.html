@@ -319,6 +319,7 @@
         <a href="#tools">Built-in Tools</a>
         <a href="#configuration">Configuration</a>
         <a href="#permissions">Permissions</a>
+        <a href="#second-brain">Second Brain</a>
         <a href="#providers">Provider Fallback</a>
         <a href="#scheduling">Scheduling</a>
         <a href="#skills">Skills</a>
@@ -1379,6 +1380,72 @@
       <p>On <strong>CLI</strong>: an arrow-key menu appears at startup before the first prompt.</p>
       <p>On <strong>Telegram</strong>: inline keyboard buttons appear with the first message. Use <code>/permissions</code> to change mode at any time.</p>
       <p><strong>Scheduled tasks</strong> always run in Allow All mode — filesystem access and shell commands are auto-approved. You receive a notification before each task executes.</p>
+
+      <h2 id="second-brain">Second Brain</h2>
+      <p>Mercury has a persistent, structured memory that grows with every conversation. When enabled, it automatically extracts, stores, and retrieves facts about you — your preferences, goals, projects, habits, and more.</p>
+
+      <h3>How it works</h3>
+      <ol>
+        <li><strong>Extraction</strong> — After each conversation, Mercury pulls 0&ndash;3 facts and stores them with type, confidence, importance, and durability scores.</li>
+        <li><strong>Retrieval</strong> — Before each message, the top 5 relevant memories (within a 900-char budget) are injected into context. Mercury references them naturally.</li>
+        <li><strong>Consolidation</strong> — Every 60 minutes, Mercury builds a profile summary, an active-state summary, and generates <code>reflection</code> memories from detected patterns.</li>
+        <li><strong>Pruning</strong> — Active-scope memories stale after 21 days. Inferred memories decay. Low-confidence durable memories are dismissed after 120 days. Memories reinforced 3+ times are promoted to durable.</li>
+      </ol>
+
+      <h3>Memory Types</h3>
+      <table class="cmd-table">
+        <thead>
+          <tr><th>Type</th><th>Scope</th><th>What it stores</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>identity</td><td>durable</td><td>Who you are — name, role, background</td></tr>
+          <tr><td>preference</td><td>durable</td><td>What you like and dislike</td></tr>
+          <tr><td>goal</td><td>active</td><td>What you're working toward</td></tr>
+          <tr><td>project</td><td>active</td><td>What you're building</td></tr>
+          <tr><td>habit</td><td>durable</td><td>Behavioral patterns and routines</td></tr>
+          <tr><td>decision</td><td>active</td><td>Decisions and choices you've made</td></tr>
+          <tr><td>constraint</td><td>durable</td><td>Rules and constraints you follow</td></tr>
+          <tr><td>relationship</td><td>durable</td><td>People and connections</td></tr>
+          <tr><td>episode</td><td>active</td><td>Specific events and experiences</td></tr>
+          <tr><td>reflection</td><td>durable</td><td>System-generated insights from patterns</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Conflict Resolution</h3>
+      <p>When Mercury detects opposing memories (e.g. "prefers TypeScript" vs "prefers Python"), the higher-confidence one wins. If equal, the newer one wins. Negation mismatches ("likes X" vs "does not like X") are detected and resolved automatically.</p>
+
+      <h3>Evidence Kinds</h3>
+      <ul>
+        <li><strong>direct</strong> — Explicitly stated by you (highest confidence)</li>
+        <li><strong>inferred</strong> — Pattern Mercury detected (decays over time)</li>
+        <li><strong>manual</strong> — Added via <code>/memory</code> command</li>
+        <li><strong>system</strong> — Auto-generated reflections from consolidation</li>
+      </ul>
+
+      <h3>Managing Memory</h3>
+      <p>Use <code>/memory</code> in any channel:</p>
+      <table class="cmd-table">
+        <thead>
+          <tr><th>Action</th><th>CLI</th><th>Telegram</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Overview</td><td>Arrow-key menu → Overview</td><td>Inline button: 📋 Overview</td></tr>
+          <tr><td>Recent memories</td><td>Arrow-key menu → Recent</td><td>Inline button: 🔍 Recent</td></tr>
+          <tr><td>Search</td><td>Arrow-key menu → Search</td><td>Not available (ask Mercury to search)</td></tr>
+          <tr><td>Pause learning</td><td>Arrow-key menu → Pause</td><td>Inline button: ⏸ Pause</td></tr>
+          <tr><td>Resume learning</td><td>Arrow-key menu → Resume</td><td>Inline button: ▶ Resume</td></tr>
+          <tr><td>Clear all</td><td>Arrow-key menu → Clear (with confirmation)</td><td>Inline button: 🗑 Clear → Yes</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Enable / Disable</h3>
+      <p>Second Brain is <strong>enabled by default</strong>. To disable it:</p>
+      <ul>
+        <li>Environment variable: <code>SECOND_BRAIN_ENABLED=false</code></li>
+        <li>Config file: set <code>memory.secondBrain.enabled: false</code> in <code>~/.mercury/mercury.yaml</code></li>
+      </ul>
+      <p>When disabled, Mercury falls back to basic long-term fact search (JSONL, text-match only). No extraction, no consolidation, no SQLite.</p>
+      <p>All data is stored locally in <code>~/.mercury/memory/second-brain/second-brain.db</code> (SQLite). Nothing leaves your machine.</p>
 
       <h2 id="providers">Provider Fallback</h2>
       <p>Configure multiple LLM providers. Mercury tries them in order and falls back automatically. When a provider

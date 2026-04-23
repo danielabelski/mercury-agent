@@ -163,8 +163,44 @@
           <div class="feature-icon">🛡</div>
           <h3>Permission Hardened</h3>
           <p>Folder-level read/write scoping. Command blocklist (sudo, rm -rf, etc. — never executed). Pending approval
-            flow. Skill elevation with granular allowed-tools. No surprises.</p>
+            flow. Ask Me or Allow All mode per session.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="second-brain" class="section section-alt">
+    <div class="container">
+      <h2 class="section-title">🧠 Second Brain</h2>
+      <p class="section-subtitle">Mercury doesn't just chat — it <em>remembers</em>. A persistent, structured memory that grows with every conversation.</p>
+      <div class="brain-grid">
+        <div class="brain-card" data-reveal>
+          <h3>Learns Automatically</h3>
+          <p>After each conversation, Mercury extracts facts about you — your preferences, goals, projects, habits, relationships, and decisions. No manual entry needed.</p>
+        </div>
+        <div class="brain-card" data-reveal>
+          <h3>Recalls What Matters</h3>
+          <p>Only memories relevant to the current conversation are injected — up to 5 facts within a 900-character budget. Your context window stays clean.</p>
+        </div>
+        <div class="brain-card" data-reveal>
+          <h3>Resolves Conflicts</h3>
+          <p>Preferences change. When Mercury detects a contradiction (you liked X, now you prefer Y), the higher-confidence memory wins. No stale data.</p>
+        </div>
+        <div class="brain-card" data-reveal>
+          <h3>10 Memory Types</h3>
+          <p>Identity, preference, goal, project, habit, decision, constraint, relationship, episode, and reflection — each scored by confidence, importance, and durability.</p>
+        </div>
+        <div class="brain-card" data-reveal>
+          <h3>Auto-Consolidation</h3>
+          <p>Every hour Mercury synthesizes a profile summary and generates reflections from patterns it detects. Active memories promote to durable when reinforced 3+ times.</p>
+        </div>
+        <div class="brain-card" data-reveal>
+          <h3>You Stay in Control</h3>
+          <p><code>/memory</code> gives you overview, search, pause, and clear. Second Brain can be disabled entirely via config. All data stays on your machine in SQLite.</p>
+        </div>
+      </div>
+      <div class="brain-note" data-reveal>
+        <p>Enable/disable: <code>SECOND_BRAIN_ENABLED=false</code> env var or <code>memory.secondBrain.enabled: false</code> in <code>~/.mercury/mercury.yaml</code>. Enabled by default.</p>
       </div>
     </div>
   </section>
