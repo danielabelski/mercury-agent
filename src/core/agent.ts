@@ -30,8 +30,10 @@ import {
 
 class ToolCallLoopDetector {
   private recentCalls: Array<{ tool: string; params: string }> = [];
-  private maxEntries = 20;
+  private totalCalls = 0;
   private hardAborted = false;
+
+  private static readonly ABSOLUTE_MAX = 25;
 
   private static readonly HIGH_TOLERANCE_TOOLS = new Set([
     'fetch_url',
@@ -47,15 +49,20 @@ class ToolCallLoopDetector {
   }
 
   private static getSameToolThreshold(toolName: string): number {
-    return ToolCallLoopDetector.HIGH_TOLERANCE_TOOLS.has(toolName) ? 6 : 4;
+    return ToolCallLoopDetector.HIGH_TOLERANCE_TOOLS.has(toolName) ? 8 : 4;
   }
 
   record(toolName: string, params: Record<string, any>): void {
-    const paramsKey = JSON.stringify(params).slice(0, 100);
+    const paramsKey = JSON.stringify(params).slice(0, 200);
     this.recentCalls.push({ tool: toolName, params: paramsKey });
-    if (this.recentCalls.length > this.maxEntries) {
+    this.totalCalls++;
+    if (this.recentCalls.length > 30) {
       this.recentCalls.shift();
     }
+  }
+
+  detectAbsoluteLimit(): boolean {
+    return this.totalCalls >= ToolCallLoopDetector.ABSOLUTE_MAX;
   }
 
   detectIdentical(): { tool: string; count: number; message: string } | null {
@@ -85,25 +92,35 @@ class ToolCallLoopDetector {
   }
 
   detectSameTool(): { tool: string; count: number } | null {
-    if (this.recentCalls.length < 4) return null;
+    if (this.recentCalls.length < 3) return null;
 
     const last = this.recentCalls[this.recentCalls.length - 1];
 
-    let sameToolCount = 0;
+    let consecutiveCount = 0;
     for (let i = this.recentCalls.length - 1; i >= 0; i--) {
       if (this.recentCalls[i].tool === last.tool) {
-        sameToolCount++;
+        consecutiveCount++;
       } else {
         break;
       }
     }
 
     const threshold = ToolCallLoopDetector.getSameToolThreshold(last.tool);
-    if (sameToolCount >= threshold) {
-      return {
-        tool: last.tool,
-        count: sameToolCount,
-      };
+    if (consecutiveCount >= threshold) {
+      return { tool: last.tool, count: consecutiveCount };
+    }
+
+    if (this.recentCalls.length >= 6) {
+      const lastN = this.recentCalls.slice(-6);
+      const toolCounts: Record<string, number> = {};
+      for (const call of lastN) {
+        toolCounts[call.tool] = (toolCounts[call.tool] || 0) + 1;
+      }
+      for (const [tool, count] of Object.entries(toolCounts)) {
+        if (count >= 5) {
+          return { tool, count };
+        }
+      }
     }
 
     return null;
@@ -115,6 +132,7 @@ class ToolCallLoopDetector {
 
   reset(): void {
     this.recentCalls = [];
+    this.totalCalls = 0;
     this.hardAborted = false;
   }
 }
@@ -354,6 +372,14 @@ export class Agent {
                   for (const tc of toolCalls) {
                     loopDetector.record(tc.toolName, tc.args as Record<string, any>);
                   }
+                  if (loopDetector.detectAbsoluteLimit()) {
+                    logger.warn('Absolute tool call limit reached — aborting');
+                    if (channel && msg.channelType !== 'internal') {
+                      await channel.send('⚠ Tool call limit reached (25 calls). Stopping to prevent runaway loop.', msg.channelId).catch(() => {});
+                    }
+                    loopAbortController.abort();
+                    return;
+                  }
                   if (toolCalls.some((tc: any) => tc.toolName === 'use_skill')) {
                     loopDetector.reset();
                   }
@@ -365,6 +391,7 @@ export class Agent {
                       await channel.send(`⚠ Repeated call detected — ${hardLoop.tool} called ${hardLoop.count}x with same params. Stopping.`, msg.channelId).catch(() => {});
                     }
                     loopAbortController.abort();
+                    return;
                   }
                   const softLoop = loopDetector.detectSameTool();
                   if (softLoop && !loopWarningSent && channel && msg.channelType !== 'internal') {
@@ -443,6 +470,14 @@ export class Agent {
                   for (const tc of toolCalls) {
                     loopDetector.record(tc.toolName, tc.args as Record<string, any>);
                   }
+                  if (loopDetector.detectAbsoluteLimit()) {
+                    logger.warn('Absolute tool call limit reached — aborting');
+                    if (channel && msg.channelType !== 'internal') {
+                      await channel.send('⚠ Tool call limit reached (25 calls). Stopping to prevent runaway loop.', msg.channelId).catch(() => {});
+                    }
+                    loopAbortController.abort();
+                    return;
+                  }
                   if (toolCalls.some((tc: any) => tc.toolName === 'use_skill')) {
                     loopDetector.reset();
                   }
@@ -454,6 +489,7 @@ export class Agent {
                       await channel.send(`⚠ Repeated call detected — ${hardLoop.tool} called ${hardLoop.count}x with same params. Stopping.`, msg.channelId).catch(() => {});
                     }
                     loopAbortController.abort();
+                    return;
                   }
                   const softLoop = loopDetector.detectSameTool();
                   if (softLoop && !loopWarningSent && channel && msg.channelType !== 'internal') {
