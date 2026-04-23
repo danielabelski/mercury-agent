@@ -100,6 +100,9 @@ export function getManual(): string {
     ['/telegram reset', 'CLI chat only: reset all Telegram access'],
     ['/tools', 'List currently loaded tools'],
     ['/skills', 'List installed skills'],
+    ['/permissions', 'Change permission mode (Ask Me / Allow All)'],
+    ['/tasks', 'List scheduled tasks'],
+    ['/memory', 'View and manage second brain memory'],
     ['/stream', 'Toggle text streaming on/off (Telegram)'],
     ['/stream on', 'Enable streaming (live text updates)'],
     ['/stream off', 'Disable streaming (single message)'],
@@ -119,6 +122,8 @@ export function getManual(): string {
     'Say "always" when prompted to permanently approve a command type.',
     'Edit ~/.mercury/permissions.yaml to customize manually.',
     'File access is scoped — new paths need approval (y/n/always).',
+    'At session start, choose "Ask Me" (confirm each action) or "Allow All" (auto-approve everything).',
+    'Scheduled tasks always run in Allow All mode.',
   ];
 
   for (const p of perms) {

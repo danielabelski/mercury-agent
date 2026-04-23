@@ -589,6 +589,22 @@
             <td>/budget set &lt;n&gt;</td>
             <td>Change daily token budget</td>
           </tr>
+          <tr>
+            <td>/permissions</td>
+            <td>Change permission mode (Ask Me / Allow All) — Telegram only</td>
+          </tr>
+          <tr>
+            <td>/tasks</td>
+            <td>List scheduled tasks</td>
+          </tr>
+          <tr>
+            <td>/memory</td>
+            <td>View and manage second brain memory</td>
+          </tr>
+          <tr>
+            <td>/unpair</td>
+            <td>Telegram only: reset all access, new users can /start again</td>
+          </tr>
         </tbody>
       </table>
       <div class="callout">
@@ -1200,11 +1216,6 @@
             <td>Permanently approve a command type</td>
             <td>command (e.g. "curl")</td>
           </tr>
-          <tr>
-            <td>send_message</td>
-            <td>Send a message to the paired Telegram chat</td>
-            <td>message</td>
-          </tr>
         </tbody>
       </table>
 
@@ -1358,6 +1369,16 @@
       </ol>
       <p>Edit <code>~/.mercury/permissions.yaml</code> to customize. Skill elevation: skills with <code>allowed-tools
       </code> in their SKILL.md get automatic approval for those tools during execution.</p>
+
+      <h3>Permission Modes</h3>
+      <p>At session start, Mercury asks you to choose a permission mode:</p>
+      <ul>
+        <li><strong>🔒 Ask Me</strong> — Mercury asks for confirmation before file writes, shell commands that need approval, and scope changes. Default on both CLI and Telegram.</li>
+        <li><strong>✅ Allow All</strong> — Mercury auto-approves all directory scopes, all shell commands (except blocked), and loop-continuation prompts. No interruptions during the session. Resets on restart.</li>
+      </ul>
+      <p>On <strong>CLI</strong>: an arrow-key menu appears at startup before the first prompt.</p>
+      <p>On <strong>Telegram</strong>: inline keyboard buttons appear with the first message. Use <code>/permissions</code> to change mode at any time.</p>
+      <p><strong>Scheduled tasks</strong> always run in Allow All mode — filesystem access and shell commands are auto-approved. You receive a notification before each task executes.</p>
 
       <h2 id="providers">Provider Fallback</h2>
       <p>Configure multiple LLM providers. Mercury tries them in order and falls back automatically. When a provider

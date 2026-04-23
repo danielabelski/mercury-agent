@@ -110,6 +110,7 @@ In daemon mode, Telegram becomes your primary channel — CLI is log-only since 
 | `mercury setup` | Re-run the setup wizard |
 | `mercury status` | Show config and daemon status |
 | `mercury help` | Show full manual |
+| `mercury upgrade` | Upgrade to latest version |
 | `mercury telegram list` | List approved and pending Telegram users |
 | `mercury telegram approve <code\|id>` | Approve a pairing code or pending request |
 | `mercury telegram reject <id>` | Reject a pending Telegram access request |
@@ -138,6 +139,10 @@ Type these during a conversation — they don't consume API tokens. Work on both
 | `/budget override` | Override budget for one request |
 | `/budget reset` | Reset usage to zero |
 | `/budget set <n>` | Change daily token budget |
+| `/permissions` | Change permission mode (Ask Me / Allow All) |
+| `/tasks` | List scheduled tasks |
+| `/memory` | View and manage second brain memory |
+| `/unpair` | Telegram: reset all access |
 
 ## Built-in Tools
 
@@ -156,8 +161,8 @@ Type these during a conversation — they don't consume API tokens. Work on both
 
 | Channel | Features |
 |---------|----------|
-| **CLI** | Readline prompt, arrow-key command menus, real-time text streaming, markdown rendering |
-| **Telegram** | HTML formatting, file uploads, typing indicators, multi-user access with admin/member roles |
+| **CLI** | Readline prompt, arrow-key command menus, real-time text streaming, markdown rendering, permission mode picker |
+| **Telegram** | HTML formatting, file uploads, typing indicators, multi-user access with admin/member roles, editable status messages |
 
 ### Telegram Access
 
@@ -178,6 +183,18 @@ CLI commands: `mercury telegram list|approve|reject|remove|promote|demote|reset`
 - Tasks persist to `~/.mercury/schedules.yaml` and restore on restart
 - Responses route back to the channel where the task was created
 
+## Second Brain
+
+Mercury builds a structured memory of facts about you, your preferences, and your project context — stored locally in SQLite with full-text search.
+
+- **10 memory types** — preferences, relationships, project facts, decisions, routines, and more
+- **Automatic extraction** — after each conversation, Mercury pulls important facts and stores them
+- **Relevant recall** — only memories matching the current context are injected into the system prompt
+- **User controls** — `/memory` to view, search, and manage stored facts
+- **Auto-pruning** — stale entries are expired after 7 days of inactivity
+
+All memory stays on your machine in `~/.mercury/memory/second-brain.db`.
+
 ## Configuration
 
 All runtime data lives in `~/.mercury/` — not in your project directory.
@@ -192,6 +209,7 @@ All runtime data lives in `~/.mercury/` — not in your project directory.
 | `~/.mercury/schedules.yaml` | Scheduled tasks |
 | `~/.mercury/token-usage.json` | Daily token usage tracking |
 | `~/.mercury/memory/` | Short-term, long-term, episodic memory |
+| `~/.mercury/memory/second-brain.db` | SQLite database for structured long-term memory (FTS5) |
 | `~/.mercury/daemon.pid` | Background process PID |
 | `~/.mercury/daemon.log` | Daemon mode logs |
 
@@ -214,10 +232,10 @@ When a provider fails, Mercury automatically tries the next one. It remembers th
 
 ## Architecture
 
-- **TypeScript + Node.js 20+** — ESM, tsup build, zero native dependencies
+- **TypeScript + Node.js 18+** — ESM, tsup build
 - **Vercel AI SDK v4** — `generateText` + `streamText`, 10-step agentic loop, provider fallback
 - **grammY** — Telegram bot with typing indicators and file uploads
-- **Flat-file persistence** — No database. YAML + JSON in `~/.mercury/`
+- **SQLite + JSONL** — Second brain (SQLite with FTS5), short/long-term/episodic memory (JSONL)
 - **Daemon manager** — Background spawn + PID file + watchdog crash recovery
 - **System services** — macOS LaunchAgent, Linux systemd, Windows Task Scheduler
 

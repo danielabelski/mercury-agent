@@ -157,7 +157,7 @@ All runtime data lives in `~/.mercury/` (not the project directory):
 - Short-term context: last 10 messages
 - Long-term facts: keyword-matched, ~3 facts injected
 - Second brain: relevant user memories injected via `retrieveRelevant()` (~900 chars)
-- Daily default: 50,000 tokens
+- Daily default: 1,000,000 tokens
 
 ## Second Brain
 
