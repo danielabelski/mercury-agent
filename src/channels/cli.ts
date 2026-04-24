@@ -209,32 +209,41 @@ export class CLIChannel extends BaseChannel {
       return full;
     }
 
-    process.stdout.write('\x1b7');
+    const headerLines = ['', chalk.cyan(`  ${this.agentName}:`), ''];
+    for (const line of headerLines) {
+      console.log(line);
+    }
 
-    console.log('');
-    console.log(chalk.cyan(`  ${this.agentName}:`));
-    console.log('');
+    const cols = process.stdout.columns || 80;
+    let visualLines = headerLines.length;
+    let lineBuf = '';
 
     let full = '';
     for await (const chunk of content) {
       process.stdout.write(chunk);
       full += chunk;
+      lineBuf += chunk;
+      const parts = lineBuf.split('\n');
+      for (let i = 0; i < parts.length - 1; i++) {
+        visualLines += Math.max(1, Math.ceil((parts[i].length || 1) / cols));
+      }
+      lineBuf = parts[parts.length - 1];
+    }
+    if (lineBuf.length > 0) {
+      visualLines += Math.max(1, Math.ceil(lineBuf.length / cols));
+    } else {
+      visualLines += 1;
     }
     this.streamActive = false;
 
-    if (!full.trim()) {
-      process.stdout.write('\x1b8');
-      process.stdout.write('\x1b[J');
-      this.endOutput();
-      return full;
-    }
-
-    process.stdout.write('\x1b8');
+    process.stdout.write(`\x1b[${visualLines}A`);
     process.stdout.write('\x1b[J');
 
-    const block = this.formatBlock(this.agentName, '', full);
-    for (const line of block) {
-      console.log(line);
+    if (full.trim()) {
+      const block = this.formatBlock(this.agentName, '', full);
+      for (const line of block) {
+        console.log(line);
+      }
     }
 
     this.endOutput();
