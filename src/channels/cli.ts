@@ -257,6 +257,7 @@ export class CLIChannel extends BaseChannel {
       for (const line of block) {
         console.log(line);
       }
+      console.log(chalk.dim('  ' + '─'.repeat(50)));
     }
 
     this.endOutput();
