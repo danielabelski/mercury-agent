@@ -209,6 +209,7 @@ export class CLIChannel extends BaseChannel {
       return full;
     }
 
+    const startTime = Date.now();
     const headerLines = ['', chalk.cyan(`  ${this.agentName}:`), ''];
     for (const line of headerLines) {
       console.log(line);
@@ -257,7 +258,8 @@ export class CLIChannel extends BaseChannel {
       for (const line of block) {
         console.log(line);
       }
-      console.log(chalk.dim('  ' + '─'.repeat(50)));
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(chalk.dim('  ' + '─'.repeat(50 - elapsed.length - 4) + ' ' + elapsed + 's'));
     }
 
     this.endOutput();
