@@ -273,26 +273,36 @@ async function fetchGrokModels(config: ProviderConfig): Promise<ProviderModelCat
   return buildModelCatalog('grok', ids, config.model);
 }
 
-async function fetchOllamaModels(provider: ProviderName, config: ProviderConfig): Promise<ProviderModelCatalog> {
-  const headers = config.apiKey
-    ? { Authorization: `Bearer ${config.apiKey}` }
-    : undefined;
+async function fetchOllamaCloudModels(config: ProviderConfig): Promise<ProviderModelCatalog> {
+  const data = await fetchJson<OpenAIModelResponse>(
+    `${trimTrailingSlash(config.baseUrl)}/models`,
+    {
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+    },
+    'Mercury could not fetch models for this Ollama Cloud key. Please re-enter it.',
+  );
 
+  const ids = (data.data ?? [])
+    .map((model) => model.id?.trim() ?? '')
+    .filter(Boolean);
+
+  return buildModelCatalog('ollamaCloud', ids, config.model);
+}
+
+async function fetchOllamaLocalModels(config: ProviderConfig): Promise<ProviderModelCatalog> {
   const data = await fetchJson<OllamaTagsResponse>(
     `${trimTrailingSlash(config.baseUrl)}/tags`,
-    {
-      headers,
-    },
-    provider === 'ollamaCloud'
-      ? 'Mercury could not fetch models for this Ollama Cloud key. Please re-enter it.'
-      : 'Mercury could not fetch models from this Ollama Local server. Please check the base URL and try again.',
+    {},
+    'Mercury could not fetch models from this Ollama Local server. Please check the base URL and try again.',
   );
 
   const ids = (data.models ?? [])
     .map((model) => model.model?.trim() || model.name?.trim() || '')
     .filter(Boolean);
 
-  return buildModelCatalog(provider, ids, config.model);
+  return buildModelCatalog('ollamaLocal', ids, config.model);
 }
 
 async function fetchMiMoModels(config: ProviderConfig): Promise<ProviderModelCatalog> {
@@ -349,8 +359,12 @@ export async function fetchProviderModelCatalog(
     return fetchGrokModels(config);
   }
 
-  if (provider === 'ollamaCloud' || provider === 'ollamaLocal') {
-    return fetchOllamaModels(provider, config);
+  if (provider === 'ollamaCloud') {
+    return fetchOllamaCloudModels(config);
+  }
+
+  if (provider === 'ollamaLocal') {
+    return fetchOllamaLocalModels(config);
   }
 
   if (provider === 'mimo') {

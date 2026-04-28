@@ -74,4 +74,26 @@ describe('buildModelCatalog', () => {
     expect(catalog.models).toContain('mimo-v2.5');
     expect(catalog.models).toContain('mimo-v2-flash');
   });
+
+  it('prefers gpt-oss:120b for Ollama Cloud when available', () => {
+    const catalog = buildModelCatalog('ollamaCloud', [
+      'gpt-oss:120b',
+      'gpt-oss:20b',
+      'gpt-oss:120b-cloud',
+    ]);
+
+    expect(catalog.recommendedModel).toBe('gpt-oss:120b');
+    expect(catalog.models).toContain('gpt-oss:120b-cloud');
+    expect(catalog.models).toContain('gpt-oss:20b');
+  });
+
+  it('falls back to the current Ollama Cloud model when no preferred default is available', () => {
+    const catalog = buildModelCatalog(
+      'ollamaCloud',
+      ['other-model:8b'],
+      'other-model:8b',
+    );
+
+    expect(catalog.recommendedModel).toBe('other-model:8b');
+  });
 });

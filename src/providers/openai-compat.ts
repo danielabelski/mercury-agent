@@ -11,7 +11,7 @@ export class OpenAICompatProvider extends BaseProvider {
   private client: ReturnType<typeof createOpenAI>;
   private modelInstance: ReturnType<ReturnType<typeof createOpenAI>['languageModel']>;
 
-  constructor(config: ProviderConfig) {
+  constructor(config: ProviderConfig, { useChatApi }: { useChatApi?: boolean } = {}) {
     super(config);
     this.name = config.name;
     this.model = config.model;
@@ -20,7 +20,9 @@ export class OpenAICompatProvider extends BaseProvider {
       apiKey: config.apiKey,
       baseURL: config.baseUrl,
     });
-    this.modelInstance = this.client(config.model);
+    this.modelInstance = useChatApi
+      ? this.client.chat(config.model)
+      : this.client(config.model);
   }
 
   async generateText(prompt: string, systemPrompt: string): Promise<LLMResponse> {

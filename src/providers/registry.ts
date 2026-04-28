@@ -35,8 +35,10 @@ export class ProviderRegistry {
           provider = new AnthropicProvider(pc);
         } else if (pc.name === 'deepseek') {
           provider = new DeepSeekProvider(pc);
-        } else if (pc.name === 'ollamaCloud' || pc.name === 'ollamaLocal') {
+        } else if (pc.name === 'ollamaLocal') {
           provider = new OllamaProvider(pc);
+        } else if (pc.name === 'ollamaCloud') {
+          provider = new OpenAICompatProvider(pc, { useChatApi: true });
         } else if (pc.name === 'mimo' || pc.name === 'mimoTokenPlan') {
           provider = new MiMoProvider(pc);
         } else {

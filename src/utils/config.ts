@@ -166,7 +166,7 @@ export function getDefaultConfig(): MercuryConfig {
       ollamaCloud: {
         name: 'ollamaCloud',
         apiKey: getEnv('OLLAMA_CLOUD_API_KEY', ''),
-        baseUrl: getEnv('OLLAMA_CLOUD_BASE_URL', 'https://ollama.com/api'),
+        baseUrl: getEnv('OLLAMA_CLOUD_BASE_URL', 'https://ollama.com/v1'),
         model: getEnv('OLLAMA_CLOUD_MODEL', 'gpt-oss:120b'),
         enabled: getEnvBool('OLLAMA_CLOUD_ENABLED', true),
       },
@@ -236,7 +236,9 @@ export function loadConfig(): MercuryConfig {
     const raw = readFileSync(CONFIG_PATH, 'utf-8');
     const fileConfig = parseYaml(raw) as Partial<MercuryConfig>;
     const defaults = getDefaultConfig();
-    return migrateLegacyTelegramAccess(deepMerge(defaults, fileConfig));
+    return migrateLegacyOllamaCloudBaseUrl(
+      migrateLegacyTelegramAccess(deepMerge(defaults, fileConfig)),
+    );
   }
   return migrateLegacyTelegramAccess(getDefaultConfig());
 }
@@ -294,6 +296,9 @@ export function isProviderConfigured(provider: ProviderConfig): boolean {
   if (!provider.enabled) return false;
   if (provider.name === 'ollamaLocal') {
     return provider.baseUrl.length > 0 && provider.model.length > 0;
+  }
+  if (provider.name === 'ollamaCloud') {
+    return provider.apiKey.length > 0 && provider.baseUrl.length > 0;
   }
   return provider.apiKey.length > 0;
 }
@@ -496,5 +501,13 @@ export function migrateLegacyTelegramAccess(config: MercuryConfig): MercuryConfi
   delete telegram.pairedChatId;
   delete telegram.pairedUsername;
 
+  return config;
+}
+
+export function migrateLegacyOllamaCloudBaseUrl(config: MercuryConfig): MercuryConfig {
+  if (config.providers.ollamaCloud.baseUrl === 'https://ollama.com/api') {
+    config.providers.ollamaCloud.baseUrl = 'https://ollama.com/v1';
+    saveConfig(config);
+  }
   return config;
 }

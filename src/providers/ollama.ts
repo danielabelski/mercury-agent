@@ -37,7 +37,7 @@ export class OllamaProvider extends BaseProvider {
     if (this.name === 'ollamaLocal') {
       return this.config.baseUrl.length > 0 && this.config.model.length > 0;
     }
-    return this.config.apiKey.length > 0;
+    return this.config.apiKey.length > 0 && this.config.baseUrl.length > 0;
   }
 
   getModelInstance() {
