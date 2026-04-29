@@ -78,11 +78,42 @@
 
 [data-theme='dark'] .admonition {
   background: #111111;
-  border-color: #222;
 }
 
-[data-theme='dark'] .admonition-heading h5 {
+[data-theme='dark'] .admonition admonition-heading h5 {
   color: #00d4ff;
+}
+
+[data-theme='dark'] .admonition--info {
+  border-left-color: #00d4ff;
+}
+
+[data-theme='dark'] .admonition--tip {
+  border-left-color: #28c840;
+}
+
+[data-theme='dark'] .admonition--warning {
+  border-left-color: #febc2e;
+}
+
+[data-theme='dark'] .admonition--caution {
+  border-left-color: #ff5f57;
+}
+
+[data-theme='dark'] .admonition--info .admonition-heading h5 {
+  color: #00d4ff;
+}
+
+[data-theme='dark'] .admonition--tip .admonition-heading h5 {
+  color: #28c840;
+}
+
+[data-theme='dark'] .admonition--warning .admonition-heading h5 {
+  color: #febc2e;
+}
+
+[data-theme='dark'] .admonition--caution .admonition-heading h5 {
+  color: #ff5f57;
 }
 
 [data-theme='dark'] table {

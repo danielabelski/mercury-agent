@@ -20,7 +20,6 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'warn',
-  onBrokenMarkdownLinks: 'warn',
 
   i18n: {
     defaultLocale: 'en',
@@ -29,6 +28,19 @@ const config: Config = {
 
   scripts: [
     { src: 'https://analytics.cosmicstack.org/js/pa--flkUFvdfmsPSUtRivKAK.js', async: true },
+  ],
+
+  themes: [
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        language: ['en'],
+        indexBlog: false,
+        docsRouteBasePath: '/docs',
+        highlightSearchTermsOnTargetPage: true,
+      },
+    ],
   ],
 
   presets: [
