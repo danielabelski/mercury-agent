@@ -1,5 +1,61 @@
 # Changelog
 
+## 1.1.4 — OpenAI Compilations & Provider Visibility
+
+### New: OpenAI Compilations Provider
+
+A new dedicated provider for **self-hosted, third-party, or any OpenAI-compatible API** — whether it's on your system, self-hosted, or a cloud service. The community asked for a way to connect to any OpenAI-compatible endpoint without it being tied to a specific vendor.
+
+**Setup wizard flow:**
+1. Enter server base URL (required) — e.g., `http://localhost:8000/v1` or `https://my-llm.example.com/v1`
+2. Optionally enter API key (press Enter to skip — local/self-hosted servers often don't need one)
+3. Mercury tries to fetch models from `/models` endpoint
+4. If successful — shows interactive model picker with option to enter a custom name
+5. If fetch fails — prompts you to manually enter the model name
+6. You can always type a custom model name before saving
+
+**Key design points:**
+- API key is **optional** — local and self-hosted servers often run without authentication
+- Uses Chat Completions API (`/chat/completions`), not the Responses API (`/responses`)
+- `isProviderConfigured` requires `baseUrl + model` but not `apiKey`
+- No model name filtering — accepts all model IDs returned by the server
+- Can be set as the default provider
+- Environment variables: `OPENAI_COMPAT_API_KEY`, `OPENAI_COMPAT_BASE_URL`, `OPENAI_COMPAT_MODEL`, `OPENAI_COMPAT_ENABLED`
+
+### New: Provider & Model Visibility at Session Start
+
+The active provider and model are now prominently displayed when a session starts — a **magenta badge** (`⚡ Provider · Model`) makes it immediately obvious which LLM is being used. The full provider list is shown below with `← default` markers.
+
+Before:
+```
+  Providers: DeepSeek, OpenAI
+  Models: DeepSeek: deepseek-chat | OpenAI: gpt-4o-mini
+```
+
+After:
+```
+ ⚡ DeepSeek · deepseek-chat
+  Providers: DeepSeek: deepseek-chat ← default  ·  OpenAI: gpt-4o-mini
+```
+
+### Fixes: `fetchOpenAICompatModels` optional API key handling
+
+The internal `fetchOpenAICompatModels` function now only sends the `Authorization: Bearer` header when an API key is actually configured — previously it always sent the header (even with an empty key), which caused authentication errors on local servers that don't expect auth headers.
+
+`OpenAICompatProvider` also now handles empty API keys gracefully by passing `'no-key'` as a fallback to `createOpenAI()`, preventing crashes on unauthenticated servers.
+
+### Summary of Changes
+
+| File | Change |
+|------|--------|
+| `src/utils/config.ts` | Added `openaiCompat` to `ProviderName`, config interface, defaults, `isProviderConfigured()` |
+| `src/providers/registry.ts` | Route `openaiCompat` → `OpenAICompatProvider` with `useChatApi: true` |
+| `src/providers/openai-compat.ts` | Handle empty API key with `'no-key'` fallback for `createOpenAI()` |
+| `src/utils/provider-models.ts` | `OPENAI_COMPAT_PREFERRED_MODELS`, optional auth headers in model fetch, no model filtering for `openaiCompat`, routing |
+| `src/index.ts` | "OpenAI Compilations" in `PROVIDER_OPTIONS`, `promptOpenAICompatSetup()` with fetch→fallback flow, magenta default-provider badge at session start |
+| `.env.example` | Added `OPENAI_COMPAT_*` env vars |
+| `src/utils/provider-models.test.ts` | Added 2 tests for `openaiCompat` model catalog |
+
 ## 1.1.3 — Fix Ollama Cloud Provider
 
 ### What Happened
