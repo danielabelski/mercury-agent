@@ -1,0 +1,113 @@
+:root {
+  --ifm-color-primary: #00d4ff;
+  --ifm-color-primary-dark: #00b8de;
+  --ifm-color-primary-darker: #00a8ce;
+  --ifm-color-primary-darkest: #0088a8;
+  --ifm-color-primary-light: #1ad8ff;
+  --ifm-color-primary-lighter: #33dcff;
+  --ifm-color-primary-lightest: #66e3ff;
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+  --ifm-font-family-monospace: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Menlo', monospace;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 212, 255, 0.06);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #00d4ff;
+  --ifm-color-primary-dark: #00b8de;
+  --ifm-color-primary-darker: #00a8ce;
+  --ifm-color-primary-darkest: #0088a8;
+  --ifm-color-primary-light: #1ad8ff;
+  --ifm-color-primary-lighter: #33dcff;
+  --ifm-color-primary-lightest: #66e3ff;
+  --ifm-background-color: #0a0a0a;
+  --ifm-background-surface-color: #111111;
+  --ifm-color-content: #888888;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 212, 255, 0.08);
+}
+
+[data-theme='dark'] .navbar {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #222;
+}
+
+[data-theme='dark'] .footer {
+  background: #080808;
+  border-top: 1px solid #222;
+}
+
+[data-theme='dark'] .menu {
+  background: #0a0a0a;
+}
+
+[data-theme='dark'] .table-of-contents {
+  border-left: 1px solid #222;
+}
+
+[data-theme='dark'] code {
+  background: rgba(0, 212, 255, 0.08);
+  color: #00d4ff;
+  border: none;
+}
+
+[data-theme='light'] code {
+  background: rgba(0, 180, 220, 0.08);
+  color: #0088a8;
+  border: none;
+}
+
+[data-theme='dark'] .theme-doc-sidebar-container {
+  border-right: 1px solid #222;
+}
+
+.navbar__title {
+  font-family: var(--ifm-font-family-monospace);
+  font-weight: 700;
+}
+
+[data-theme='dark'] .pagination-nav__link {
+  border-color: #222;
+  background: #111111;
+}
+
+[data-theme='dark'] .card {
+  background: #111111;
+  border-color: #222;
+}
+
+[data-theme='dark'] .admonition {
+  background: #111111;
+  border-color: #222;
+}
+
+[data-theme='dark'] .admonition-heading h5 {
+  color: #00d4ff;
+}
+
+[data-theme='dark'] table {
+  border-collapse: collapse;
+}
+
+[data-theme='dark'] table th {
+  border-bottom: 1px solid #222;
+  background: #111111;
+  color: #00d4ff;
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+[data-theme='dark'] table td {
+  border-bottom: 1px solid #222;
+  color: #888;
+}
+
+[data-theme='dark'] table tr:hover td {
+  background: rgba(0, 212, 255, 0.03);
+}
+
+[data-theme='dark'] table td:first-child code {
+  color: #00d4ff;
+}

@@ -1,0 +1,25 @@
+---
+id: permissions
+title: Permissions
+---
+
+Mercury has a three-tier permission system for shell commands:
+
+1. **Blocked** — Commands like `sudo`, `rm -rf /`, `mkfs` are never executed
+2. **Auto-approved** — Safe commands like `ls`, `cat`, `git status` run without asking
+3. **Pending approval** — Unknown commands pause and ask you. Say **"always"** to permanently approve a command type
+
+Edit `~/.mercury/permissions.yaml` to customize. Skill elevation: skills with `allowed-tools` in their SKILL.md get automatic approval for those tools during execution.
+
+## Permission Modes
+
+At session start, Mercury asks you to choose a permission mode:
+
+- **🔒 Ask Me** — Mercury asks for confirmation before file writes, shell commands that need approval, and scope changes. Default on both CLI and Telegram.
+- **✅ Allow All** — Mercury auto-approves all directory scopes, all shell commands (except blocked), and loop-continuation prompts. No interruptions during the session. Resets on restart.
+
+On **CLI**: an arrow-key menu appears at startup before the first prompt.
+
+On **Telegram**: inline keyboard buttons appear with the first message. Use `/permissions` to change mode at any time.
+
+**Scheduled tasks** always run in Allow All mode — filesystem access and shell commands are auto-approved. You receive a notification before each task executes.

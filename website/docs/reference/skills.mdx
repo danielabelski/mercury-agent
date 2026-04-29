@@ -1,0 +1,23 @@
+---
+id: skills
+title: Skills
+---
+
+Skills are markdown-based extensions that live in `~/.mercury/skills/<name>/SKILL.md`.
+
+## Installing
+
+Tell Mercury in conversation:
+
+- "Install skill from https://example.com/my-skill.md"
+- Or paste the SKILL.md content directly
+
+## Invoking
+
+- "Use the daily-digest skill"
+
+## Scheduling a skill
+
+- "Remind me daily at 9am to run the daily-digest skill"
+
+Skills follow the [Agent Skills specification](https://agentskills.io). They get elevated permissions via `allowed-tools` and are loaded with progressive disclosure to save tokens.

@@ -1,0 +1,57 @@
+---
+id: built-in-tools
+title: Built-in Tools
+---
+
+Mercury has a built-in toolset it can use during conversations. These are not CLI commands — the agent decides when to call them.
+
+## Filesystem
+
+| Tool | What it does | Parameters |
+|------|-------------|------------|
+| `read_file` | Read file contents | `path` |
+| `write_file` | Write to an existing file | `path`, `content` |
+| `create_file` | Create a new file (creates parent dirs) | `path`, `content` |
+| `edit_file` | Search and replace text in a file | `path`, `old_string`, `new_string` |
+| `list_dir` | List directory contents | `path` |
+| `delete_file` | Delete a file | `path` |
+| `send_file` | Send file to user (Telegram upload) | `path` |
+| `approve_scope` | Request read/write access to a directory | `path`, `mode` |
+
+## Messaging
+
+| Tool | What it does | Parameters |
+|------|-------------|------------|
+| `send_message` | Send a message to approved Telegram recipients | `content` |
+
+## Shell
+
+| Tool | What it does | Parameters |
+|------|-------------|------------|
+| `run_command` | Execute a shell command | `command` |
+| `cd` | Change working directory (persists across calls) | `path` |
+| `approve_command` | Permanently approve a command type | `command` (e.g. "curl") |
+
+## Git
+
+| Tool | What it does |
+|------|-------------|
+| `git_status` | Working tree status |
+| `git_diff` | Show file changes |
+| `git_log` | Commit history |
+| `git_add` | Stage files |
+| `git_commit` | Create a commit |
+| `git_push` | Push to remote (needs approval) |
+
+## Web, Skills, Scheduler, System
+
+| Tool | What it does | Category |
+|------|-------------|----------|
+| `fetch_url` | Fetch a URL and return content (HTML stripped) | Web |
+| `install_skill` | Install a skill from URL or content | Skills |
+| `list_skills` | List installed skills | Skills |
+| `use_skill` | Invoke a skill by name | Skills |
+| `schedule_task` | Schedule recurring (cron) or one-shot (delay) task | Scheduler |
+| `list_scheduled_tasks` | View all scheduled tasks | Scheduler |
+| `cancel_scheduled_task` | Cancel a scheduled task | Scheduler |
+| `budget_status` | Check token budget usage | System |

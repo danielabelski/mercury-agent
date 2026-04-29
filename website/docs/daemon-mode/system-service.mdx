@@ -1,0 +1,27 @@
+---
+id: system-service
+title: System Service (Auto-Start on Boot)
+---
+
+Install Mercury as a system service so it starts automatically on boot and restarts on crash.
+
+```bash
+mercury service install
+```
+
+This detects your platform and generates the appropriate service config.
+
+| Platform | Method | Requires Admin | Auto-Start | Crash Recovery |
+|----------|--------|---------------|-------------|----------------|
+| macOS | LaunchAgent plist | No | On login | KeepAlive (restart on crash) |
+| Linux | systemd user unit | No* | On login | Restart=on-failure, 5s delay |
+| Windows | Task Scheduler (schtasks) | No | On logon | Built-in watchdog |
+
+*\*Linux boot-without-login requires `loginctl enable-linger $USER` (one-time, needs sudo).*
+
+## Other service commands
+
+```bash
+mercury service status
+mercury service uninstall
+```

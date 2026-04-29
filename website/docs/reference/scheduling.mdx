@@ -1,0 +1,20 @@
+---
+id: scheduling
+title: Scheduling
+---
+
+Mercury can schedule tasks using cron expressions or one-shot delays.
+
+## Recurring tasks
+
+Tell Mercury in conversation:
+
+- "Remind me every day at 9am to check the server"
+- "Schedule a weekly summary every Monday at 10am"
+
+## One-shot delays
+
+- "Remind me in 15 minutes to take a break"
+- "Ping me in 2 hours about the deployment"
+
+Tasks persist to `~/.mercury/schedules.yaml` and restore on restart. Responses route back to the channel (CLI or Telegram) where the task was created.

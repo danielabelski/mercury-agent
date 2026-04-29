@@ -1,0 +1,44 @@
+---
+id: starting
+title: Starting Mercury
+---
+
+:::tip Recommended: mercury up
+The easiest way to run Mercury persistently. Installs the system service if needed, starts the daemon, and ensures it's running.
+:::
+
+```bash
+mercury up
+```
+
+If Mercury is already running, `mercury up` just confirms it and shows the PID. If the service isn't installed yet, it installs it first, then starts the daemon.
+
+## Start (background daemon)
+
+```bash
+mercury start
+```
+
+Starts Mercury as a background daemon by default. Telegram becomes your primary interface. Logs go to `~/.mercury/daemon.log`. Stale PID files are auto-cleaned. Includes crash recovery with exponential backoff.
+
+## Foreground (interactive)
+
+```bash
+mercury start --foreground
+```
+
+Runs Mercury attached to your terminal with a readline prompt. Press `Ctrl+C` to exit. All conversation happens in your terminal with real-time text streaming and markdown rendering. Shorthand: `mercury start -f`.
+
+When running in background mode, you can stop it with:
+
+```bash
+mercury stop
+```
+
+## Verbose logging
+
+Add `--verbose` to any start command to see debug logs on stderr:
+
+```bash
+mercury start --verbose
+```

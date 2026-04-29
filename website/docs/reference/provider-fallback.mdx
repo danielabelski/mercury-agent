@@ -1,0 +1,30 @@
+---
+id: provider-fallback
+title: Provider Fallback
+---
+
+Configure multiple LLM providers. Mercury tries them in order and falls back automatically. When a provider fails, Mercury tries the next one and remembers the last successful provider.
+
+## Supported Providers
+
+| Provider | Default Model | API Key | Configuration |
+|----------|--------------|---------|---------------|
+| **DeepSeek** | `deepseek-chat` | `DEEPSEEK_API_KEY` | Default provider, cost-effective |
+| **OpenAI** | `gpt-4o-mini` | `OPENAI_API_KEY` | GPT-4o-mini, GPT-4o, o3, etc. |
+| **Anthropic** | `claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY` | Claude Sonnet, Haiku, Opus |
+| **Grok (xAI)** | `grok-4` | `GROK_API_KEY` | OpenAI-compatible endpoint |
+| **Ollama Cloud** | `gpt-oss:120b` | `OLLAMA_CLOUD_API_KEY` | Remote Ollama models via API |
+| **Ollama Local** | `gpt-oss:20b` | No key needed | Local Ollama instance (127.0.0.1:11434) |
+| **OpenAI Compatible** | Configurable | `OPENAI_COMPAT_API_KEY` | Any OpenAI-compatible server |
+
+## Configuring Providers
+
+Run `mercury doctor` and enter API keys for the providers you want to use. You can also set environment variables directly or edit `~/.mercury/mercury.yaml`.
+
+:::tip Environment variables
+Each provider has env vars for its API key, base URL, and model. For example, DeepSeek uses `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, and `DEEPSEEK_MODEL`. Ollama Local requires no API key — just set `OLLAMA_LOCAL_ENABLED=true` and `OLLAMA_LOCAL_MODEL` to your preferred local model.
+:::
+
+:::warning More providers coming
+Google Gemini, Mistral, and other providers are on the roadmap. Mercury's OpenAI-compatible provider architecture means you can often configure additional providers by setting a custom base URL and API key.
+:::

@@ -1,0 +1,68 @@
+---
+id: telegram
+title: Telegram
+---
+
+Mercury connects to Telegram via a bot token, providing a mobile-first interface with streaming, file uploads, and inline approval keyboards.
+
+## Access Model
+
+Mercury uses an **organization access model** with admins and members. The first user becomes the admin by completing a pairing-code flow during setup. Additional users request access by sending `/start`, which admins can approve or reject.
+
+:::info First-time pairing
+When no admins exist yet, sending `/start` creates a **pairing code** that must be entered in the CLI to complete setup. This ensures only the legitimate owner can gain initial access. Once an admin exists, new users send `/start` to create a pending request that admins can approve or reject.
+:::
+
+:::warning Private chats only
+Mercury only works in private (one-to-one) chats. Messages in groups or channels are always ignored.
+:::
+
+### Roles
+
+| Role | Description | Can approve requests? |
+|------|-------------|----------------------|
+| **Admin** | First user to pair. Can approve/reject access requests, promote/demote users, and reset all access. | Yes |
+| **Member** | Approved by an admin. Can send messages and receive responses. | No |
+| **Pending** | Sent `/start` but not yet approved. Can only see their pending status. | No |
+
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `mercury telegram list` | Show approved admins, members, and pending requests |
+| `mercury telegram approve <code\|userId>` | Approve the first pairing code or a pending request by user ID |
+| `mercury telegram reject <userId>` | Reject a pending access request |
+| `mercury telegram remove <userId>` | Remove an approved admin or member |
+| `mercury telegram promote <userId>` | Promote a member to admin |
+| `mercury telegram demote <userId>` | Demote an admin to member (at least one admin must remain) |
+| `mercury telegram reset` | Clear all Telegram access (admins, members, pending). Start fresh. |
+
+### In-Chat Commands
+
+| Command | Description |
+|---------|-------------|
+| `/start` or `/pair` | Request access (new users) or check status (approved users) |
+| `/unpair` | Admin only: Reset all Telegram access for this Mercury instance |
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| Text streaming | Real-time response editing with typing indicators (toggle with `/stream`) |
+| File uploads | Photos, audio, video, and documents auto-detected and sent with the right API |
+| HTML formatting | Markdown automatically converted to Telegram-compatible HTML |
+| Inline keyboards | Shell command and scope approvals shown as Allow / Always / Deny buttons |
+| Multi-user access | Organization model with admins and members. `send_message` broadcasts to all approved users. |
+| Bot commands menu | 12 commands registered in Telegram's bot menu for quick access |
+
+## Configuration
+
+Telegram is set up during `mercury doctor` or initial onboarding. You need a bot token from [@BotFather](https://t.me/BotFather).
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather | — |
+| `TELEGRAM_ENABLED` | Enable/disable Telegram channel | `false` |
+| `TELEGRAM_STREAMING` | Enable real-time text streaming | `true` |
+
+Type `none` as the bot token during `mercury doctor` to disable Telegram.

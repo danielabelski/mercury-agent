@@ -1,0 +1,102 @@
+---
+id: github-companion
+title: GitHub Companion
+---
+
+Mercury can act as your GitHub companion — creating pull requests, reviewing PRs, managing issues, and making co-authored commits — all through natural conversation. When configured, five GitHub tools are registered alongside Mercury's built-in toolset, letting you manage repositories without leaving the terminal or Telegram.
+
+:::info Conditional availability
+GitHub tools **only appear when `GITHUB_TOKEN` is configured** via `mercury doctor`. Without a token, these tools are not registered and won't be available in conversation.
+:::
+
+## Why set up GitHub?
+
+- **Co-authored commits** — Mercury's avatar appears alongside yours on every commit it helps with
+- **Pull requests** — "Create a PR for this change" and Mercury stages, commits, pushes, and opens the PR
+- **Issue management** — "Check open issues" or "File a bug for the login crash"
+- **Code review** — "Review PR #5" and Mercury reads the diff and posts a summary
+- **Full API access** — The `github_api` tool lets Mercury hit any GitHub endpoint
+
+## Setup
+
+Run `mercury doctor` and fill in the four GitHub fields:
+
+```bash
+mercury doctor
+```
+
+### 1. GitHub username
+
+Your GitHub username. This is used for commit attribution and identifying you in API calls.
+
+```
+Example: hotheadhacker
+```
+
+### 2. Co-authored-by (automatic)
+
+Every Mercury-assisted commit automatically includes a `Co-authored-by: Mercury <mercury@cosmicstack.org>` trailer. No configuration needed — this is the default. Mercury's avatar will appear alongside yours on GitHub.
+
+You can customize the email in `~/.mercury/.env` by setting `GITHUB_EMAIL` if you prefer a different co-author address.
+
+### 3. GitHub PAT (Personal Access Token)
+
+You need a token so Mercury can authenticate with the GitHub API. **Never share this token.** It's stored locally in `~/.mercury/.env` and never sent anywhere except GitHub's API.
+
+:::warning Where to create your token
+
+**Fine-grained PAT (recommended):**
+
+1. Go to [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)
+2. Give it a name (e.g. `mercury-agent`) and set an expiration
+3. Under **Repository access**, select **All repositories** or choose specific repos
+4. Under **Permissions → Repository permissions**, grant:
+   - **Contents** — Read and write
+   - **Pull requests** — Read and write
+   - **Issues** — Read and write
+5. Click **Generate token** and copy it immediately
+
+**Classic PAT:**
+
+1. Go to [github.com/settings/tokens/new](https://github.com/settings/tokens/new)
+2. Give it a name (e.g. `mercury-agent`) and set an expiration
+3. Select the **repo** scope (full control of private repositories)
+4. Click **Generate token** and copy it immediately
+:::
+
+### 4. Default repo (optional)
+
+Set a default repository so you can say `"create an issue"` without specifying the repo every time. You can enter it in any of these formats:
+
+```
+hotheadhacker/mercury-agent
+https://github.com/hotheadhacker/mercury-agent
+```
+
+Mercury will parse the owner and repo name automatically from either format.
+
+Press **Enter** on any field to keep its current value. When the PAT is set, you'll see:
+
+```
+✓ GitHub tools registered (5)
+```
+
+## GitHub Tools
+
+| Tool | What it does |
+|------|-------------|
+| `create_pr` | Create a pull request with title, body, head branch, and base branch |
+| `review_pr` | Fetch a PR diff, review the changes, and post review comments |
+| `list_issues` | List and filter issues in a repository (open, closed, by label, by assignee) |
+| `create_issue` | Create a new issue with title, body, labels, and assignees |
+| `github_api` | Raw GitHub API access — an escape hatch for any endpoint not covered above |
+
+## Co-Authored Commits
+
+When Mercury commits code using `git_commit`, it automatically appends a `Co-authored-by: Mercury <mercury@cosmicstack.org>` trailer. This means Mercury's avatar appears alongside yours in GitHub's commit history — giving credit where it's due.
+
+## Security
+
+:::warning PAT storage
+Your GitHub PAT is stored in `~/.mercury/mercury.yaml` alongside your other configuration. It is never sent to any external service — only to the GitHub API directly from your machine. Treat this file like any other credential: don't commit it, don't share it, and rotate the token if you suspect it's compromised.
+:::

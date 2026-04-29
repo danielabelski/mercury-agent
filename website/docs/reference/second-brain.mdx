@@ -1,0 +1,63 @@
+---
+id: second-brain
+title: Second Brain
+---
+
+Mercury has a persistent, structured memory that grows with every conversation. When enabled, it automatically extracts, stores, and retrieves facts about you — your preferences, goals, projects, habits, and more.
+
+## How it works
+
+1. **Extraction** — After each conversation, Mercury pulls 0–3 facts and stores them with type, confidence, importance, and durability scores.
+2. **Retrieval** — Before each message, the top 5 relevant memories (within a 900-char budget) are injected into context. Mercury references them naturally.
+3. **Consolidation** — Every 60 minutes, Mercury builds a profile summary, an active-state summary, and generates `reflection` memories from detected patterns.
+4. **Pruning** — Active-scope memories stale after 21 days. Inferred memories decay. Low-confidence durable memories are dismissed after 120 days. Memories reinforced 3+ times are promoted to durable.
+
+## Memory Types
+
+| Type | Scope | What it stores |
+|------|-------|---------------|
+| `identity` | durable | Who you are — name, role, background |
+| `preference` | durable | What you like and dislike |
+| `goal` | active | What you're working toward |
+| `project` | active | What you're building |
+| `habit` | durable | Behavioral patterns and routines |
+| `decision` | active | Decisions and choices you've made |
+| `constraint` | durable | Rules and constraints you follow |
+| `relationship` | durable | People and connections |
+| `episode` | active | Specific events and experiences |
+| `reflection` | durable | System-generated insights from patterns |
+
+## Conflict Resolution
+
+When Mercury detects opposing memories (e.g. "prefers TypeScript" vs "prefers Python"), the higher-confidence one wins. If equal, the newer one wins. Negation mismatches ("likes X" vs "does not like X") are detected and resolved automatically.
+
+## Evidence Kinds
+
+- **direct** — Explicitly stated by you (highest confidence)
+- **inferred** — Pattern Mercury detected (decays over time)
+- **manual** — Added via `/memory` command
+- **system** — Auto-generated reflections from consolidation
+
+## Managing Memory
+
+Use `/memory` in any channel:
+
+| Action | CLI | Telegram |
+|--------|-----|----------|
+| Overview | Arrow-key menu → Overview | Inline button: 📋 Overview |
+| Recent memories | Arrow-key menu → Recent | Inline button: 🔍 Recent |
+| Search | Arrow-key menu → Search | Not available (ask Mercury to search) |
+| Pause learning | Arrow-key menu → Pause | Inline button: ⏸ Pause |
+| Resume learning | Arrow-key menu → Resume | Inline button: ▶ Resume |
+| Clear all | Arrow-key menu → Clear (with confirmation) | Inline button: 🗑 Clear → Yes |
+
+## Enable / Disable
+
+Second Brain is **enabled by default**. To disable it:
+
+- Environment variable: `SECOND_BRAIN_ENABLED=false`
+- Config file: set `memory.secondBrain.enabled: false` in `~/.mercury/mercury.yaml`
+
+When disabled, Mercury falls back to basic long-term fact search (JSONL, text-match only). No extraction, no consolidation, no SQLite.
+
+All data is stored locally in `~/.mercury/memory/second-brain/second-brain.db` (SQLite). Nothing leaves your machine.

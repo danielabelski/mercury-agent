@@ -1,0 +1,64 @@
+---
+id: platform-guide
+title: Platform-Specific Guide
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+<Tabs>
+<TabItem value="macos" label="macOS" default>
+
+`mercury service install` creates a LaunchAgent at `~/Library/LaunchAgents/com.cosmicstack.mercury.plist`.
+
+- **Auto-start**: Loads on login via `launchctl load`
+- **Crash recovery**: `KeepAlive SuccessfulExit = false` restarts on crash
+- **No sudo needed**: User-level LaunchAgent, not system daemon
+- **Logs**: `~/.mercury/daemon.log` and `~/.mercury/daemon-error.log`
+
+### Manual management
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.cosmicstack.mercury.plist
+launchctl unload ~/Library/LaunchAgents/com.cosmicstack.mercury.plist
+```
+
+</TabItem>
+<TabItem value="linux" label="Linux">
+
+`mercury service install` creates a systemd user unit at `~/.config/systemd/user/mercury.service`.
+
+- **Auto-start**: Enabled via `systemctl --user enable mercury.service`
+- **Crash recovery**: `Restart=on-failure` with 5s delay
+- **No sudo needed**: User-level service
+- **Boot without login**: Run `sudo loginctl enable-linger $USER` once
+- **Logs**: `~/.mercury/daemon.log` or `journalctl --user -u mercury`
+
+### Manual management
+
+```bash
+systemctl --user start mercury
+systemctl --user status mercury
+systemctl --user stop mercury
+```
+
+</TabItem>
+<TabItem value="windows" label="Windows">
+
+`mercury service install` creates a Windows Task Scheduler task named `MercuryAgent`.
+
+- **Auto-start**: Triggers on user logon via `schtasks`
+- **Crash recovery**: Built-in watchdog with exponential backoff
+- **No admin needed**: Runs with limited privileges (`/rl limited`)
+- **Logs**: `%USERPROFILE%\.mercury\daemon.log`
+
+### Manual management
+
+```bash
+schtasks /query /tn "MercuryAgent" /fo list
+schtasks /run /tn "MercuryAgent"
+schtasks /delete /tn "MercuryAgent" /f
+```
+
+</TabItem>
+</Tabs>
