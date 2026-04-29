@@ -949,16 +949,23 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
   }
 
   const available = providers.listAvailable();
-  const providerLabels = available.map((provider) => getProviderLabel(provider as ProviderName));
-  const providerModels = available.map((provider) => {
-    const key = provider as ProviderName;
-    return `${getProviderLabel(key)}: ${config.providers[key].model}`;
-  });
+  const defaultProvider = config.providers.default;
+  const defaultModel = config.providers[defaultProvider]?.model ?? 'unknown';
+
   if (!isDaemon) {
-    console.log(chalk.dim(`  Providers: ${providerLabels.join(', ')}`));
-    console.log(chalk.dim(`  Models: ${providerModels.join(' | ')}`));
+    const providerSummary = available.map((provider) => {
+      const key = provider as ProviderName;
+      const label = getProviderLabel(key);
+      const model = config.providers[key]?.model ?? '?';
+      const marker = key === defaultProvider ? ' ← default' : '';
+      return `${label}: ${model}${marker}`;
+    });
+
+    console.log('');
+    console.log(chalk.bgMagenta.black.bold(` ⚡ ${getProviderLabel(defaultProvider)} · ${defaultModel} `));
+    console.log(chalk.dim(`  Providers: ${providerSummary.join('  ·  ')}`));
   } else {
-    logger.info({ providers: available }, 'Providers loaded');
+    logger.info({ providers: available, default: defaultProvider }, 'Providers loaded');
   }
 
   const skillLoader = new SkillLoader();
