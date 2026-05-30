@@ -144,6 +144,15 @@ export function TuiApp({ state, onInput, onPermissionResolve, onExit, spotifyCli
     '/skills remove ',
     '/skills help',
     '/stream',
+    '/saver',
+    '/saver on',
+    '/saver off',
+    '/saver toggle',
+    '/saver threshold ',
+    '/saver auto on',
+    '/saver auto off',
+    '/saver routing on',
+    '/saver routing off',
     '/view',
     '/view balanced',
     '/view detailed',
@@ -811,6 +820,7 @@ export function TuiApp({ state, onInput, onPermissionResolve, onExit, spotifyCli
           ))}
         </Box>
       )}
+      <TokenBarView state={state} />
     </Box>
   );
 }
@@ -851,11 +861,6 @@ function BackgroundBarView({ tasks }: { tasks: BackgroundTaskInfo[] }) {
 function StatusBarView({ state }: { state: TuiState }) {
   const modeColor = state.programmingMode === 'execute' ? 'green' : state.programmingMode === 'plan' ? 'yellow' : 'gray';
   const modeLabel = state.programmingMode === 'off' ? '' : ` ${state.programmingMode.toUpperCase()}`;
-  let tokenBar = '';
-  if (state.tokenInfo) {
-    const filled = Math.min(20, Math.round(state.tokenInfo.percentage / 5));
-    tokenBar = `[${'█'.repeat(filled)}${'░'.repeat(20 - filled)}] ${state.tokenInfo.percentage}%`;
-  }
   const providerBadge = state.provider ? `⚡ ${state.provider.name} · ${state.provider.model}` : '⚡ No provider';
   const viewLabel = state.viewMode === 'balanced' ? 'minimal' : 'detailed';
 
@@ -883,6 +888,9 @@ function StatusBarView({ state }: { state: TuiState }) {
         <Box flexGrow={1}>
           <Text bold color="cyan">{state.agentName}</Text>
           {state.programmingMode !== 'off' && <Text> <Text color={modeColor} bold>{modeLabel}</Text></Text>}
+          {state.saverInfo && state.saverInfo.state !== 'off' && (
+            <Text> <Text color="gray">|</Text> <Text color={state.saverInfo.state === 'auto' ? 'yellow' : 'green'} bold>{`⚡SAVER${state.saverInfo.state === 'auto' ? ' (auto)' : ''}`}</Text></Text>
+          )}
           {state.projectContext && <Text> <Text color="gray">|</Text> <Text color="blue">{state.projectContext}</Text></Text>}
           <Text> <Text color="gray">|</Text> <Text color="yellow">View: {viewLabel}</Text></Text>
           <Text> <Text color="gray">|</Text> <Text color="green">{state.permissionMode === 'allow-all' ? '🔓' : '🔒'}</Text></Text>
@@ -892,15 +900,101 @@ function StatusBarView({ state }: { state: TuiState }) {
       <Box paddingX={1}>
         <Text color="gray">{'─'.repeat(50)}</Text>
       </Box>
-      {state.tokenInfo && (
-        <Box paddingX={1}>
-          <Text color="cyan">Tokens </Text>
-          <Text>{tokenBar}</Text>
-          <Text color="gray"> {state.tokenInfo.used.toLocaleString()}/{state.tokenInfo.budget.toLocaleString()}</Text>
-        </Box>
-      )}
     </Box>
   );
+}
+
+function TokenBarView({ state }: { state: TuiState }) {
+  if (!state.tokenInfo && !state.provider) return null;
+
+  const saverActive = !!(state.saverInfo && state.saverInfo.state !== 'off');
+  const saverColor = state.saverInfo?.state === 'auto' ? 'yellow' : 'green';
+
+  // Color the percentage based on usage thresholds (or saver state if active)
+  const pct = state.tokenInfo?.percentage ?? 0;
+  const pctColor = saverActive
+    ? saverColor
+    : pct >= 90 ? 'red' : pct >= 70 ? 'yellow' : 'cyan';
+
+  // Sub-agent count (running only)
+  const runningAgents = state.subAgents.filter((a) => a.status === 'running' || a.status === 'paused').length;
+  // Background task count (running only)
+  const runningBg = state.backgroundTasks.filter((t) => t.status === 'running').length;
+
+  const isWorkspace = state.mode === 'workspace' && state.workspace;
+
+  return (
+    <Box flexDirection="column">
+      <Box paddingX={1}>
+        <Text color="gray">{'─'.repeat(50)}</Text>
+      </Box>
+      <Box paddingX={1} paddingBottom={0}>
+        {state.tokenInfo && (
+          <>
+            {saverActive && (
+              <Text color={saverColor} bold>⚡ </Text>
+            )}
+            <Text color={pctColor}>{pct < 25 ? '○' : pct < 50 ? '◔' : pct < 75 ? '◑' : pct < 100 ? '◕' : '●'} </Text>
+            <Text color={pctColor}>
+              [{'█'.repeat(Math.min(10, Math.round(pct / 10)))}{'░'.repeat(10 - Math.min(10, Math.round(pct / 10)))}]
+            </Text>
+            <Text color={pctColor} bold> {pct}%</Text>
+            {saverActive && state.saverInfo!.savedToday > 0 && (
+              <Text color="green"> · saved ~{formatCompact(state.saverInfo!.savedToday)}</Text>
+            )}
+            {saverActive && state.saverInfo!.savedToday === 0 && (
+              <Text color={saverColor}> · SAVER</Text>
+            )}
+          </>
+        )}
+
+        {state.provider && (
+          <>
+            <Text color="gray"> │ </Text>
+            <Text color="magenta">{state.provider.model}</Text>
+          </>
+        )}
+
+        {isWorkspace && (
+          <>
+            <Text color="gray"> │ </Text>
+            <Text color="blue">⎇ {state.workspace!.branch}</Text>
+            {(state.workspace!.ahead > 0 || state.workspace!.behind > 0) && (
+              <Text color="yellow">
+                {state.workspace!.ahead > 0 ? ` ↑${state.workspace!.ahead}` : ''}
+                {state.workspace!.behind > 0 ? ` ↓${state.workspace!.behind}` : ''}
+              </Text>
+            )}
+            {(state.workspace!.stagedCount > 0 || state.workspace!.unstagedCount > 0) && (
+              <Text color="gray">
+                {state.workspace!.stagedCount > 0 ? <Text color="green"> S{state.workspace!.stagedCount}</Text> : null}
+                {state.workspace!.unstagedCount > 0 ? <Text color="yellow"> M{state.workspace!.unstagedCount}</Text> : null}
+              </Text>
+            )}
+          </>
+        )}
+
+        {!isWorkspace && runningBg > 0 && (
+          <>
+            <Text color="gray"> │ </Text>
+            <Text color="cyan">⏳ {runningBg} bg</Text>
+          </>
+        )}
+        {!isWorkspace && runningAgents > 0 && (
+          <>
+            <Text color="gray"> │ </Text>
+            <Text color="magenta">🤖 {runningAgents} agent{runningAgents !== 1 ? 's' : ''}</Text>
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
 }
 
 function ChatBody({ state }: { state: TuiState }) {
@@ -909,7 +1003,7 @@ function ChatBody({ state }: { state: TuiState }) {
       {state.sidebarSections.length > 0 && <SidebarView sections={state.sidebarSections} />}
       <Box flexDirection="column" flexGrow={1}>
         <ChatMessagesView messages={state.chatMessages} agentName={state.agentName} />
-        {state.toolSteps.length > 0 && !state.isThinking && <ToolStepsView steps={state.toolSteps} viewMode={state.viewMode} />}
+        {state.toolSteps.length > 0 && !state.isThinking && <ToolStepsView steps={state.toolSteps} viewMode={state.viewMode} idle />}
         {state.isThinking && <ThinkingIndicator agentName={state.agentName} steps={state.toolSteps} mode={state.mode} />}
         {state.subAgents.length > 0 && <AgentPanelView agents={state.subAgents} />}
       </Box>
@@ -948,7 +1042,7 @@ function CodingBody({ state }: { state: TuiState }) {
       </Box>
       <Box flexDirection="column" flexGrow={1}>
         <ChatMessagesView messages={state.chatMessages} agentName={state.agentName} />
-        {state.toolSteps.length > 0 && !state.isThinking && <ToolStepsView steps={state.toolSteps} viewMode={state.viewMode} />}
+        {state.toolSteps.length > 0 && !state.isThinking && <ToolStepsView steps={state.toolSteps} viewMode={state.viewMode} idle />}
         {state.isThinking && <ThinkingIndicator agentName={state.agentName} steps={state.toolSteps} mode={state.mode} />}
         <Box paddingX={1} marginTop={1}>
           <Text dimColor>Mode shortcuts: Ctrl+P Plan · Ctrl+X Execute</Text>
@@ -1575,7 +1669,23 @@ function RunningStepRow({ step }: { step: ToolStep }) {
   );
 }
 
-function ToolStepsView({ steps, viewMode }: { steps: ToolStep[]; viewMode: 'balanced' | 'detailed' }) {
+function ToolStepsView({ steps, viewMode, idle }: { steps: ToolStep[]; viewMode: 'balanced' | 'detailed'; idle?: boolean }) {
+  // When idle (task complete), collapse to a single summary line to free
+  // up screen space. Full history remains available via /progress.
+  if (idle) {
+    const last = [...steps].reverse().find((s) => s.status === 'done' || s.status === 'error') ?? steps[steps.length - 1];
+    if (!last) return null;
+    const totalDone = steps.filter((s) => s.status === 'done').length;
+    const icon = last.status === 'done' ? '✅' : last.status === 'error' ? '❌' : '·';
+    const more = totalDone > 1 ? ` · +${totalDone - 1} earlier` : '';
+    return (
+      <Box marginLeft={2} marginTop={1}>
+        <Text dimColor>{icon} {last.label}{last.elapsed != null ? ` (${last.elapsed.toFixed(1)}s)` : ''}{more} · /progress</Text>
+      </Box>
+    );
+  }
+
+
   const visible = viewMode === 'detailed' ? steps.slice(-20) : steps.slice(-5);
   const totalDone = steps.filter((s) => s.status === 'done').length;
   const totalRunning = steps.filter((s) => s.status === 'running').length;
