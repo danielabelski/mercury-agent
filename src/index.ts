@@ -1303,6 +1303,23 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
   config = ensureCreatorField(config);
   const name = config.identity.name;
 
+  // Check for crash flag from previous run — if Mercury crashed mid-task,
+  // report it to the user immediately so they don't have to investigate.
+  const { readCrashFlag, clearCrashFlag } = await import('./core/crash-flag.js');
+  const crashFlag = readCrashFlag();
+  if (crashFlag) {
+    clearCrashFlag();
+    const age = Math.round((Date.now() - crashFlag.timestamp) / 1000);
+    const timeAgo = age >= 60 ? `${Math.floor(age / 60)}m ago` : `${age}s ago`;
+    const msg = `⚠ Mercury crashed ${timeAgo}: ${crashFlag.reason}`;
+    if (!isDaemon) {
+      console.log(chalk.yellow(`  ${msg}`));
+      console.log(chalk.dim('  If you had an active task, it was interrupted. You can retry.\n'));
+    } else {
+      logger.warn({ crashFlag }, 'Previous crash detected');
+    }
+  }
+
   if (!isDaemon) {
     logger.info(`${name} is waking up...`);
   } else {
@@ -1803,6 +1820,11 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
     } else {
       logger.info('Mercury is shutting down (daemon mode)');
     }
+    // Notify all channels that Mercury is stopping — users should never
+    // have to re-prompt to discover their task was killed mid-flight.
+    try {
+      await agent.notifyAllChannels('⚠ Mercury is shutting down. If I was working on something, it has been interrupted. Send a message after restart to continue.');
+    } catch { /* best effort */ }
     if (userMemory) {
       try {
         userMemory.consolidate();
@@ -1818,7 +1840,7 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
   process.on('SIGTERM', shutdown);
 
   if (!isDaemon && process.platform !== 'win32') {
-    process.on('SIGHUP', () => {
+    process.on('SIGHUP', async () => {
       logger.info('SIGHUP received — terminal closed. Daemonizing.');
       try {
         const result = tryAutoDaemonize();
@@ -1826,9 +1848,16 @@ async function runAgent(isDaemon: boolean = false): Promise<void> {
           logger.info(`Forked daemon. Foreground process exiting.`);
         } else {
           logger.warn('SIGHUP received but daemonization failed. Shutting down.');
+          // Notify before forced exit
+          try {
+            await agent.notifyAllChannels('⚠ Mercury lost its terminal and could not daemonize. Shutting down — your task was interrupted.');
+          } catch { /* best effort */ }
         }
       } catch {
         logger.warn('SIGHUP received but daemonization failed. Shutting down.');
+        try {
+          await agent.notifyAllChannels('⚠ Mercury lost its terminal and could not daemonize. Shutting down — your task was interrupted.');
+        } catch { /* best effort */ }
       }
       process.exit(0);
     });

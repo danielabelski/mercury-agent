@@ -464,17 +464,39 @@ export class CLIChannel extends BaseChannel {
       isThinking: true,
     });
 
-    for await (const chunk of content) {
-      full += chunk;
-      const now = Date.now();
-      if (now - lastRender >= 16) {
+    try {
+      for await (const chunk of content) {
+        full += chunk;
+        const now = Date.now();
+        if (now - lastRender >= 16) {
+          this.update({
+            chatMessages: this.state.chatMessages.map((m) =>
+              m.id === msgId ? { ...m, content: full, streaming: true } : m,
+            ),
+          });
+          lastRender = now;
+        }
+      }
+    } catch (err) {
+      // Stream was interrupted (API disconnect, abort, etc.). Save
+      // whatever partial text we accumulated so the user doesn't lose it.
+      logger.warn({ err, partialLen: full.length }, 'CLI stream interrupted, saving partial text');
+      if (full.length > 0) {
         this.update({
           chatMessages: this.state.chatMessages.map((m) =>
-            m.id === msgId ? { ...m, content: full, streaming: true } : m,
+            m.id === msgId ? { ...m, content: full + '\n\n⚠ Stream was interrupted. Partial response shown above.', streaming: false } : m,
           ),
+          isThinking: false,
         });
-        lastRender = now;
+      } else {
+        this.update({
+          chatMessages: this.state.chatMessages.map((m) =>
+            m.id === msgId ? { ...m, content: '⚠ Stream was interrupted before any response was generated.', streaming: false } : m,
+          ),
+          isThinking: false,
+        });
       }
+      return full;
     }
 
     this.update({

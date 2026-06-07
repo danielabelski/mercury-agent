@@ -89,7 +89,7 @@ export class SubAgentSupervisor {
 
   private fireLifecycleEvent(event: Parameters<AgentLifecycleCallback>[0]): void {
     for (const cb of this.lifecycleCallbacks) {
-      try { cb(event); } catch {}
+      try { cb(event); } catch (err) { logger.warn({ err }, 'supervisor lifecycle callback threw'); }
     }
   }
 
@@ -189,7 +189,7 @@ export class SubAgentSupervisor {
       if (entry) {
         const channelType = entry.sourceChannelType || 'cli';
         const channelId = entry.sourceChannelId || 'cli';
-        this.notify(channelType, channelId, `🔄 Agent ${agentId}: ${progress}`).catch(() => {});
+        this.notify(channelType, channelId, `🔄 Agent ${agentId}: ${progress}`).catch((e) => logger.warn({ e, agentId }, 'supervisor progress notify failed'));
       }
     });
 
@@ -216,6 +216,17 @@ export class SubAgentSupervisor {
       this.activeAgents.delete(config.id);
       this.fileLockManager.releaseAll(config.id);
       this.pausedAgents.delete(config.id);
+      // Notify the user — they should never have to discover a crashed
+      // sub-agent by re-prompting.
+      const entry = this.taskBoard.get(config.id);
+      if (entry) {
+        const channelType = entry.sourceChannelType || 'cli';
+        const channelId = entry.sourceChannelId || 'cli';
+        const errMsg = err instanceof Error ? err.message : String(err);
+        await this.notify(channelType, channelId,
+          `❌ **Agent ${config.id}** crashed unexpectedly: "${entry.task.slice(0, 40)}"\nError: ${errMsg.slice(0, 150)}`,
+        ).catch((e) => logger.warn({ e, agentId: config.id }, 'Failed to notify user of sub-agent crash'));
+      }
       await this.processWaitQueue();
     });
   }

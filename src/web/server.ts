@@ -187,12 +187,19 @@ process.on('exit', () => {
 
 process.on('uncaughtException', (err) => {
   logger.error({ err: err.message }, 'Uncaught exception in web server');
-  // Don't exit — let Mercury's main process handler decide
+  // Write crash flag so next startup can report to the user.
+  try {
+    const { writeCrashFlag } = require('../core/crash-flag.js');
+    writeCrashFlag({ reason: `Uncaught exception: ${err.message}`.slice(0, 300), timestamp: Date.now() });
+  } catch { /* best effort */ }
 });
 
 process.on('unhandledRejection', (reason: any) => {
   logger.warn({ err: reason?.message || reason }, 'Unhandled rejection in web server (non-fatal)');
-  // Don't exit — unhandled rejections from API routes should not kill Mercury
+  try {
+    const { writeCrashFlag } = require('../core/crash-flag.js');
+    writeCrashFlag({ reason: `Unhandled rejection: ${reason?.message || reason}`.slice(0, 300), timestamp: Date.now() });
+  } catch { /* best effort */ }
 });
 
 export function startWebServer(): { port: number; url: string } {

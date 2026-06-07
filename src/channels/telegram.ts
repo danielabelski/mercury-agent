@@ -165,7 +165,7 @@ export class TelegramChannel extends BaseChannel {
           if (this.onPermissionMode) {
             this.onPermissionMode(mode, chatId);
           }
-        }).catch(() => {});
+        }).catch((e: any) => logger.warn({ e }, 'telegram permission ask failed'));
         this.permissionModes.set(chatId, 'ask-me');
       }
 
@@ -194,7 +194,7 @@ export class TelegramChannel extends BaseChannel {
           if (this.onPermissionMode) {
             this.onPermissionMode(mode, chatId);
           }
-        }).catch(() => {});
+        }).catch((e: any) => logger.warn({ e }, 'telegram permission ask failed'));
         return;
       }
 
@@ -364,7 +364,7 @@ export class TelegramChannel extends BaseChannel {
     const resolved = path.resolve(filePath);
     if (!fs.existsSync(resolved)) {
       for (const chatId of chatIds) {
-        await this.bot.api.sendMessage(chatId, `File not found: ${filePath}`).catch(() => {});
+        await this.bot.api.sendMessage(chatId, `File not found: ${filePath}`).catch((e: any) => logger.warn({ e }, "telegram send failed"));
       }
       return;
     }
@@ -388,7 +388,7 @@ export class TelegramChannel extends BaseChannel {
         logger.info({ file: resolved, chatId }, 'File sent via Telegram');
       } catch (err: any) {
         logger.error({ err: err.message, file: resolved, chatId }, 'Telegram sendFile failed');
-        await this.bot.api.sendMessage(chatId, `Failed to send file: ${err.message}`).catch(() => {});
+        await this.bot.api.sendMessage(chatId, `Failed to send file: ${err.message}`).catch((e: any) => logger.warn({ e }, "telegram send failed"));
       }
     }
   }
@@ -416,7 +416,7 @@ export class TelegramChannel extends BaseChannel {
       try {
         await this.bot.api.sendMessage(chatId, html, { parse_mode: 'HTML' });
       } catch (err: any) {
-        await this.bot.api.sendMessage(chatId, this.stripHtml(html)).catch(() => {});
+        await this.bot.api.sendMessage(chatId, this.stripHtml(html)).catch((e: any) => logger.warn({ e }, "telegram html send failed"));
       }
     }
     return full;
@@ -476,9 +476,9 @@ export class TelegramChannel extends BaseChannel {
 
   startTypingLoop(chatId: number): void {
     this.stopTypingLoop();
-    this.bot?.api.sendChatAction(chatId, 'typing').catch(() => {});
+    this.bot?.api.sendChatAction(chatId, 'typing').catch((e: any) => logger.warn({ e }, "telegram sendChatAction failed"));
     this.typingInterval = setInterval(() => {
-      this.bot?.api.sendChatAction(chatId, 'typing').catch(() => {});
+      this.bot?.api.sendChatAction(chatId, 'typing').catch((e: any) => logger.warn({ e }, "telegram sendChatAction failed"));
     }, 4000);
   }
 
@@ -791,7 +791,7 @@ export class TelegramChannel extends BaseChannel {
       } catch {
         await this.bot.api.sendMessage(admin.chatId, message, {
           reply_markup: keyboard,
-        }).catch(() => {});
+        }).catch((e: any) => logger.warn({ e }, "telegram send failed"));
       }
     }
   }
@@ -819,7 +819,7 @@ export class TelegramChannel extends BaseChannel {
     const request = findTelegramPendingRequest(this.config, requestUserId);
     if (!request) {
       await ctx.answerCallbackQuery({ text: 'Already handled' });
-      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => {});
+      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch((e: any) => logger.debug({ e }, "telegram editMessageReplyMarkup failed"));
       return;
     }
 
@@ -832,7 +832,7 @@ export class TelegramChannel extends BaseChannel {
 
       saveConfig(this.config);
       await ctx.answerCallbackQuery({ text: 'Approved' });
-      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => {});
+      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch((e: any) => logger.debug({ e }, "telegram editMessageReplyMarkup failed"));
       await this.sendDirectMessage(
         request.chatId,
         `Telegram access approved. You can now chat with Mercury.\n\nTelegram access: ${getTelegramAccessSummary(this.config)}`,
@@ -850,7 +850,7 @@ export class TelegramChannel extends BaseChannel {
 
       saveConfig(this.config);
       await ctx.answerCallbackQuery({ text: 'Rejected' });
-      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch(() => {});
+      await ctx.editMessageReplyMarkup({ reply_markup: undefined }).catch((e: any) => logger.debug({ e }, "telegram editMessageReplyMarkup failed"));
       await this.sendDirectMessage(
         request.chatId,
         'Your Telegram access request was rejected. This bot is not available to you.',
@@ -948,7 +948,7 @@ export class TelegramChannel extends BaseChannel {
       await ctx.answerCallbackQuery({ text: 'Recent memories' });
       const recent = this.chatCommandContext.memoryRecent(10);
       if (recent.length === 0) {
-        await this.bot.api.sendMessage(chatId, 'No memories yet.').catch(() => {});
+        await this.bot.api.sendMessage(chatId, 'No memories yet.').catch((e: any) => logger.warn({ e }, "telegram send failed"));
         return;
       }
       const lines = ['<b>Recent Memories:</b>\n'];
@@ -972,7 +972,7 @@ export class TelegramChannel extends BaseChannel {
       await this.bot.api.sendMessage(chatId, currentlyPaused
         ? 'Learning resumed. Mercury will remember new things from conversations.'
         : 'Learning paused. Mercury will not store new memories until resumed.',
-      ).catch(() => {});
+      ).catch((e: any) => logger.warn({ e }, "telegram send failed"));
       await this.sendMemoryKeyboard(chatId);
       return;
     }
@@ -994,7 +994,7 @@ export class TelegramChannel extends BaseChannel {
     if (action === 'clear_yes') {
       const cleared = this.chatCommandContext.memoryClear();
       await ctx.answerCallbackQuery({ text: `Cleared ${cleared} memories` });
-      await this.bot.api.sendMessage(chatId, `Cleared ${cleared} memories.`).catch(() => {});
+      await this.bot.api.sendMessage(chatId, `Cleared ${cleared} memories.`).catch((e: any) => logger.warn({ e }, "telegram send failed"));
       return;
     }
 
@@ -1011,7 +1011,7 @@ export class TelegramChannel extends BaseChannel {
       const subconsciousMemories = this.chatCommandContext.memoryGetSubconscious(5);
       const subconsciousTotal = this.chatCommandContext.memorySummary().subconsciousTotal;
       if (subconsciousMemories.length === 0) {
-        await this.bot.api.sendMessage(chatId, '💤 <b>Subconscious Memory</b>\n\nNo subconscious memories yet. Memories move here after 30 days of not being referenced, and are recalled automatically when relevant to a conversation.').catch(() => {});
+        await this.bot.api.sendMessage(chatId, '💤 <b>Subconscious Memory</b>\n\nNo subconscious memories yet. Memories move here after 30 days of not being referenced, and are recalled automatically when relevant to a conversation.').catch((e: any) => logger.warn({ e }, "telegram send failed"));
         return;
       }
       const lines = ['💤 <b>Subconscious Memory (first 5 by recency):</b>\n'];
@@ -1543,7 +1543,7 @@ export class TelegramChannel extends BaseChannel {
           try {
             await this.bot?.api.sendMessage(chatId, chunk, { parse_mode: 'HTML' });
           } catch {
-            await this.bot?.api.sendMessage(chatId, this.stripHtml(chunk)).catch(() => {});
+            await this.bot?.api.sendMessage(chatId, this.stripHtml(chunk)).catch((e: any) => logger.warn({ e }, "telegram html send failed"));
           }
         }
       }
@@ -1555,7 +1555,7 @@ export class TelegramChannel extends BaseChannel {
       try {
         await this.bot?.api.sendMessage(chatId, html, { parse_mode: 'HTML' });
       } catch {
-        await this.bot?.api.sendMessage(chatId, this.stripHtml(html)).catch(() => {});
+        await this.bot?.api.sendMessage(chatId, this.stripHtml(html)).catch((e: any) => logger.warn({ e }, "telegram html send failed"));
       }
     }
 
@@ -1583,7 +1583,7 @@ export class TelegramChannel extends BaseChannel {
     try {
       await this.bot.api.sendMessage(chatId, mdToTelegram(content), { parse_mode: 'HTML' });
     } catch {
-      await this.bot.api.sendMessage(chatId, content).catch(() => {});
+      await this.bot.api.sendMessage(chatId, content).catch((e: any) => logger.warn({ e }, "telegram send failed"));
     }
   }
 

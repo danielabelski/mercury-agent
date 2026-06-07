@@ -356,7 +356,7 @@ export class Agent {
     supervisor.setNotifyCallback(async (channelType, channelId, message) => {
       const channel = this.channels.get(channelType as any);
       if (channel) {
-        await channel.send(message, channelId).catch(() => {});
+        await channel.send(message, channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
       }
     });
     supervisor.setLifecycleCallback((event) => {
@@ -712,7 +712,7 @@ export class Agent {
         void channel.send(
           `⚠ Task stalled (no progress for ${stallSec}s). Stopped to avoid hanging. You can retry or use /bg current sooner for long tasks.`,
           msg.channelId,
-        ).catch(() => {});
+        ).catch((e) => logger.warn({ e }, 'channel send failed'));
         return;
       }
 
@@ -728,7 +728,7 @@ export class Agent {
       void channel.send(
         `⏳ Working... ${elapsedSec}s elapsed${stepInfo}.${narrativeBlock}${handoffHint}`,
         msg.channelId,
-      ).catch(() => {});
+      ).catch((e) => logger.warn({ e }, 'channel send failed'));
 
       // Escalate: 20s → 30s → 45s → 60s (cap)
       if (heartbeatCount <= 2) {
@@ -773,11 +773,11 @@ export class Agent {
 
     const cliCh = this.channels.get('cli');
     if (cliCh) {
-      (cliCh as CLIChannel).send(message).catch(() => {});
+      (cliCh as CLIChannel).send(message).catch((e) => logger.warn({ e }, 'channel send failed'));
     }
     const tgCh = this.channels.get('telegram');
     if (tgCh) {
-      tgCh.send(message).catch(() => {});
+      tgCh.send(message).catch((e) => logger.warn({ e }, 'channel send failed'));
     }
 
     this.syncBgTasksToTui();
@@ -880,7 +880,7 @@ export class Agent {
         const channel = this.channels.getChannelForMessage(msg);
         if (channel) {
           const agentLines = runningAgents.map(a => `  🔄 ${a.id}: ${a.task.slice(0, 45)}${a.task.length > 45 ? '...' : ''}`);
-          await channel.send(`**Multi-agent mode** — ${runningAgents.length} agent${runningAgents.length > 1 ? 's' : ''} active:\n${agentLines.join('\n')}`, msg.channelId).catch(() => {});
+          await channel.send(`**Multi-agent mode** — ${runningAgents.length} agent${runningAgents.length > 1 ? 's' : ''} active:\n${agentLines.join('\n')}`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
         }
       }
     }
@@ -977,12 +977,12 @@ export class Agent {
           const notice = this.saverMode.consumeAutoActivationNotice();
           if (notice && msg.channelType !== 'internal') {
             const ch = this.channels.get(msg.channelType as any);
-            if (ch) await ch.send(notice, msg.channelId).catch(() => {});
+            if (ch) await ch.send(notice, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
           }
           this.syncSaverToCli();
         } else if (transition.deactivated && msg.channelType !== 'internal') {
           const ch = this.channels.get(msg.channelType as any);
-          if (ch) await ch.send('⚡ Token Saver Mode auto-disengaged (usage dropped). Normal response settings restored.', msg.channelId).catch(() => {});
+          if (ch) await ch.send('⚡ Token Saver Mode auto-disengaged (usage dropped). Normal response settings restored.', msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
           this.syncSaverToCli();
         }
       }
@@ -1138,7 +1138,7 @@ export class Agent {
                   content: `[Routing] User clarified: use the \`${chosenName}\` skill. Invoke it via \`use_skill\` with name="${chosenName}" before doing anything else.`,
                 });
                 if (channel) {
-                  await channel.send(`Routing to **${chosenName}**.`, msg.channelId).catch(() => {});
+                  await channel.send(`Routing to **${chosenName}**.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                 }
               }
               // If the user picked "None of these" we just fall through silently.
@@ -1160,7 +1160,7 @@ export class Agent {
                   if (plan.batches.length > 0) {
                     const channel = this.channels.getChannelForMessage(msg);
                     if (channel) {
-                      await channel.send(`🧠 Routing to ${topBatch.skills.length} skills in **${topBatch.categoryLabel}**: ${matchedSkillNames.join(', ')}.`, msg.channelId).catch(() => {});
+                      await channel.send(`🧠 Routing to ${topBatch.skills.length} skills in **${topBatch.categoryLabel}**: ${matchedSkillNames.join(', ')}.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
 
                     const batchResults = await this.skillBatcher.execute(plan, trimmed, msg.channelId, msg.channelType);
@@ -1191,7 +1191,7 @@ export class Agent {
 
       const channel = this.channels.getChannelForMessage(msg);
       if (channel) {
-        await channel.typing(msg.channelId).catch(() => {});
+        await channel.typing(msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
         this.markProgress();
       }
 
@@ -1279,7 +1279,7 @@ export class Agent {
                   if (loopDetector.detectAbsoluteLimit()) {
                     logger.warn('Absolute tool call limit reached — aborting');
                     if (channel && msg.channelType !== 'internal') {
-                      await channel.send('⚠ Tool call limit reached (25 calls). Stopping to prevent runaway loop.', msg.channelId).catch(() => {});
+                      await channel.send('⚠ Tool call limit reached (25 calls). Stopping to prevent runaway loop.', msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1292,7 +1292,7 @@ export class Agent {
                     logger.warn({ tool: hardLoop.tool, count: hardLoop.count }, 'Hard loop detected — aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send(`☿ **Mercury Autopilot** · Identical call loop — ${hardLoop.tool} called ${hardLoop.count}x with same params. Stopping this path.`, msg.channelId).catch(() => {});
+                      await channel.send(`☿ **Mercury Autopilot** · Identical call loop — ${hardLoop.tool} called ${hardLoop.count}x with same params. Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1302,7 +1302,7 @@ export class Agent {
                     logger.warn({ tool: similarLoop.tool, count: similarLoop.count }, 'Failing loop detected — aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send(`☿ **Mercury Autopilot** · Failing loop — ${similarLoop.tool} called ${similarLoop.count}x, all failing. Stopping this path.`, msg.channelId).catch(() => {});
+                      await channel.send(`☿ **Mercury Autopilot** · Failing loop — ${similarLoop.tool} called ${similarLoop.count}x, all failing. Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1334,7 +1334,7 @@ export class Agent {
                           });
                           if (!shouldContinue) {
                             logger.warn({ tool: analysis.tool, count: analysis.count }, 'Mercury Autopilot: AI verdict — unproductive, aborting');
-                            await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} repeated ${analysis.count}x with low progress (${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch(() => {});
+                            await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} repeated ${analysis.count}x with low progress (${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                             loopAbortController.abort();
                             return;
                           }
@@ -1342,7 +1342,7 @@ export class Agent {
                         // Not yet at check limit — let it continue with a note
                         loopDetector.reset();
                         loopWarningSent = false;
-                        await channel.send(`☿ **Mercury Autopilot** · Observing ${analysis.tool} (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity). Continuing under monitoring.`, msg.channelId).catch(() => {});
+                        await channel.send(`☿ **Mercury Autopilot** · Observing ${analysis.tool} (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity). Continuing under monitoring.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                       } else {
                         loopWarningSent = true;
                         const shouldContinue = await channel.askToContinue(
@@ -1360,7 +1360,7 @@ export class Agent {
                       // verdict === 'stuck'
                       if (this.capabilities.permissions.isAutoApproveAll()) {
                         logger.warn({ tool: analysis.tool, count: analysis.count, diversity: analysis.paramDiversity, successRate: analysis.successRate }, 'Mercury Autopilot: stuck loop detected');
-                        await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} is stuck (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch(() => {});
+                        await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} is stuck (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                         loopAbortController.abort();
                         return;
                       } else {
@@ -1381,7 +1381,7 @@ export class Agent {
                   if (channel && msg.channelType !== 'internal') {
                     if (channel instanceof CLIChannel) {
                       for (const tc of toolCalls) {
-                        void (channel as CLIChannel).sendToolFeedback(tc.toolName, tc.input as Record<string, any>).catch(() => {});
+                        void (channel as CLIChannel).sendToolFeedback(tc.toolName, tc.input as Record<string, any>).catch((e) => logger.warn({ e }, 'channel send failed'));
                       }
                       if (toolResults) {
                         for (let i = 0; i < toolResults.length; i++) {
@@ -1395,14 +1395,14 @@ export class Agent {
                     } else if (channel instanceof TelegramChannel) {
                       const tgCh = channel as TelegramChannel;
                       for (const tc of toolCalls) {
-                        void tgCh.sendToolFeedback(tc.toolName, tc.input as Record<string, any>, msg.channelId).catch(() => {});
+                        void tgCh.sendToolFeedback(tc.toolName, tc.input as Record<string, any>, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                       }
                       if (toolResults) {
                         for (let i = 0; i < toolResults.length; i++) {
                           const tr = toolResults[i] as any;
                           const tcName = toolCalls[i]?.toolName as string | undefined;
                           if (tcName) {
-                            await tgCh.sendStepDone(tcName, tr.result ?? tr, msg.channelId).catch(() => {});
+                            await tgCh.sendStepDone(tcName, tr.result ?? tr, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                           }
                         }
                       }
@@ -1421,7 +1421,7 @@ export class Agent {
                         }
                       }
                     } else {
-                      await channel.send(`  [Using: ${names}]`, msg.channelId).catch(() => {});
+                      await channel.send(`  [Using: ${names}]`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     this.markProgress();
                   }
@@ -1435,7 +1435,7 @@ export class Agent {
                     logger.warn('Reasoning loop detected — model keeps thinking without acting, aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send('⚠ I\'m stuck in a reasoning loop (thinking without taking action). Stopping.', msg.channelId).catch(() => {});
+                      await channel.send('⚠ I\'m stuck in a reasoning loop (thinking without taking action). Stopping.', msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1445,7 +1445,7 @@ export class Agent {
                     logger.warn({ pattern: textRepeat.pattern, count: textRepeat.count }, 'Text repetition loop detected — aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send('⚠ I keep generating the same response. Stopping to prevent repetition.', msg.channelId).catch(() => {});
+                      await channel.send('⚠ I keep generating the same response. Stopping to prevent repetition.', msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                   }
@@ -1522,7 +1522,7 @@ export class Agent {
                   if (loopDetector.detectAbsoluteLimit()) {
                     logger.warn('Absolute tool call limit reached — aborting');
                     if (channel && msg.channelType !== 'internal') {
-                      await channel.send('⚠ Tool call limit reached (25 calls). Stopping to prevent runaway loop.', msg.channelId).catch(() => {});
+                      await channel.send('⚠ Tool call limit reached (25 calls). Stopping to prevent runaway loop.', msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1535,7 +1535,7 @@ export class Agent {
                     logger.warn({ tool: hardLoop.tool, count: hardLoop.count }, 'Hard loop detected — aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send(`☿ **Mercury Autopilot** · Identical call loop — ${hardLoop.tool} called ${hardLoop.count}x with same params. Stopping this path.`, msg.channelId).catch(() => {});
+                      await channel.send(`☿ **Mercury Autopilot** · Identical call loop — ${hardLoop.tool} called ${hardLoop.count}x with same params. Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1545,7 +1545,7 @@ export class Agent {
                     logger.warn({ tool: similarLoop.tool, count: similarLoop.count }, 'Failing loop detected — aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send(`☿ **Mercury Autopilot** · Failing loop — ${similarLoop.tool} called ${similarLoop.count}x, all failing. Stopping this path.`, msg.channelId).catch(() => {});
+                      await channel.send(`☿ **Mercury Autopilot** · Failing loop — ${similarLoop.tool} called ${similarLoop.count}x, all failing. Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1577,7 +1577,7 @@ export class Agent {
                           });
                           if (!shouldContinue) {
                             logger.warn({ tool: analysis.tool, count: analysis.count }, 'Mercury Autopilot: AI verdict — unproductive, aborting');
-                            await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} repeated ${analysis.count}x with low progress (${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch(() => {});
+                            await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} repeated ${analysis.count}x with low progress (${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                             loopAbortController.abort();
                             return;
                           }
@@ -1585,7 +1585,7 @@ export class Agent {
                         // Not yet at check limit — let it continue with a note
                         loopDetector.reset();
                         loopWarningSent = false;
-                        await channel.send(`☿ **Mercury Autopilot** · Observing ${analysis.tool} (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity). Continuing under monitoring.`, msg.channelId).catch(() => {});
+                        await channel.send(`☿ **Mercury Autopilot** · Observing ${analysis.tool} (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity). Continuing under monitoring.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                       } else {
                         loopWarningSent = true;
                         const shouldContinue = await channel.askToContinue(
@@ -1603,7 +1603,7 @@ export class Agent {
                       // verdict === 'stuck'
                       if (this.capabilities.permissions.isAutoApproveAll()) {
                         logger.warn({ tool: analysis.tool, count: analysis.count, diversity: analysis.paramDiversity, successRate: analysis.successRate }, 'Mercury Autopilot: stuck loop detected');
-                        await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} is stuck (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch(() => {});
+                        await channel.send(`☿ **Mercury Autopilot** · ${analysis.tool} is stuck (${analysis.count} calls, ${Math.round(analysis.paramDiversity * 100)}% diversity, ${Math.round(analysis.successRate * 100)}% success). Stopping this path.`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                         loopAbortController.abort();
                         return;
                       } else {
@@ -1624,7 +1624,7 @@ export class Agent {
                   if (channel && msg.channelType !== 'internal') {
                     if (channel instanceof CLIChannel) {
                       for (const tc of toolCalls) {
-                        void (channel as CLIChannel).sendToolFeedback(tc.toolName, tc.input as Record<string, any>).catch(() => {});
+                        void (channel as CLIChannel).sendToolFeedback(tc.toolName, tc.input as Record<string, any>).catch((e) => logger.warn({ e }, 'channel send failed'));
                       }
                       if (toolResults) {
                         for (let i = 0; i < toolResults.length; i++) {
@@ -1638,14 +1638,14 @@ export class Agent {
                     } else if (channel instanceof TelegramChannel) {
                       const tgCh = channel as TelegramChannel;
                       for (const tc of toolCalls) {
-                        void tgCh.sendToolFeedback(tc.toolName, tc.input as Record<string, any>, msg.channelId).catch(() => {});
+                        void tgCh.sendToolFeedback(tc.toolName, tc.input as Record<string, any>, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                       }
                       if (toolResults) {
                         for (let i = 0; i < toolResults.length; i++) {
                           const tr = toolResults[i] as any;
                           const tcName = toolCalls[i]?.toolName as string | undefined;
                           if (tcName) {
-                            await tgCh.sendStepDone(tcName, tr.result ?? tr, msg.channelId).catch(() => {});
+                            await tgCh.sendStepDone(tcName, tr.result ?? tr, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                           }
                         }
                       }
@@ -1664,7 +1664,7 @@ export class Agent {
                         }
                       }
                     } else {
-                      await channel.send(`  [Using: ${names}]`, msg.channelId).catch(() => {});
+                      await channel.send(`  [Using: ${names}]`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     this.markProgress();
                   }
@@ -1678,7 +1678,7 @@ export class Agent {
                     logger.warn('Reasoning loop detected — model keeps thinking without acting, aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send('⚠ I\'m stuck in a reasoning loop (thinking without taking action). Stopping.', msg.channelId).catch(() => {});
+                      await channel.send('⚠ I\'m stuck in a reasoning loop (thinking without taking action). Stopping.', msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                     return;
@@ -1688,7 +1688,7 @@ export class Agent {
                     logger.warn({ pattern: textRepeat.pattern, count: textRepeat.count }, 'Text repetition loop detected — aborting');
                     if (!loopWarningSent && channel && msg.channelType !== 'internal') {
                       loopWarningSent = true;
-                      await channel.send('⚠ I keep generating the same response. Stopping to prevent repetition.', msg.channelId).catch(() => {});
+                      await channel.send('⚠ I keep generating the same response. Stopping to prevent repetition.', msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
                     }
                     loopAbortController.abort();
                   }
@@ -1727,7 +1727,7 @@ export class Agent {
           lastError = err;
           logger.warn({ provider: provider.name, err: err.message }, 'Provider failed, trying fallback');
           if (channel && msg.channelType !== 'internal') {
-            await channel.send(`  [Provider ${provider.name} failed, trying fallback...]`, msg.channelId).catch(() => {});
+            await channel.send(`  [Provider ${provider.name} failed, trying fallback...]`, msg.channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
           }
         }
       }
@@ -1882,6 +1882,27 @@ export class Agent {
       this.lifecycle.transition('idle');
     } catch (err) {
       logger.error({ err }, 'Error handling message');
+      // Always notify the user — they should never have to re-prompt
+      // to find out their task died.
+      const catchChannel = this.channels.getChannelForMessage(msg);
+      if (catchChannel && msg.channelType !== 'internal') {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        void catchChannel.send(
+          `⚠ I encountered an unexpected error and couldn't finish: ${errMsg.slice(0, 200)}`,
+          msg.channelId,
+        ).catch((sendErr: any) => logger.warn({ sendErr }, 'Failed to notify user of handler error'));
+      }
+      // Write crash flag so next startup also reports the failure.
+      try {
+        const { writeCrashFlag } = await import('./crash-flag.js');
+        writeCrashFlag({
+          reason: `Unhandled agent error: ${err instanceof Error ? err.message : String(err)}`.slice(0, 300),
+          timestamp: Date.now(),
+          activeTask: this.currentActivity || undefined,
+          channelId: msg.channelId || undefined,
+          channelType: msg.channelType || undefined,
+        });
+      } catch { /* best effort */ }
       this.lifecycle.transition('idle');
     } finally {
       if (wallTimeout) clearTimeout(wallTimeout);
@@ -2017,7 +2038,7 @@ Always specify owner and repo parameters on GitHub tools. The user's GitHub user
         await channel.send(
           ` Scheduled task started${skillInfo}: ${manifest.description}\nAll actions auto-approved for this run.`,
           manifest.sourceChannelId,
-        ).catch(() => {});
+        ).catch((e) => logger.warn({ e }, 'channel send failed'));
       }
 
       let prompt = manifest.prompt || '';
@@ -2211,6 +2232,23 @@ RULES:
   }
 
   /**
+   * Notify all active channels with a message. Used before forced exits
+   * (SIGTERM, crash, watchdog kill) so the user is never left wondering
+   * what happened to their task.
+   */
+  async notifyAllChannels(message: string): Promise<void> {
+    const active = this.channels.getActiveChannels();
+    const sends = active.map((type) => {
+      const ch = this.channels.get(type);
+      if (!ch) return Promise.resolve();
+      return ch.send(message).catch((e) => {
+        logger.warn({ e, channel: type }, 'Failed to notify channel before exit');
+      });
+    });
+    await Promise.allSettled(sends);
+  }
+
+  /**
    * AI self-check: ask the model itself whether repeated tool usage is productive or a loop.
    * Used in allow-all mode instead of prompting the user.
    * Returns true if the AI thinks it should continue, false if it should stop.
@@ -2307,7 +2345,7 @@ Is this productive iteration or a stuck loop?`,
           resolve(choices[0]);
         }, 120000);
 
-        channel.send(question, channelId).catch(() => {});
+        channel.send(question, channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
 
         const tgBot = (channel as any).bot;
         if (tgBot) {
@@ -2315,7 +2353,7 @@ Is this productive iteration or a stuck loop?`,
             ? Number(channelId.split(':')[1])
             : Number(channelId);
 
-          tgBot.api.sendMessage(chatId, question, { reply_markup: kb }).catch(() => {});
+          tgBot.api.sendMessage(chatId, question, { reply_markup: kb }).catch((e: any) => logger.warn({ e }, 'channel send failed'));
 
           const handler = async (ctx: any) => {
             const data = ctx.callbackQuery?.data;
@@ -2336,7 +2374,7 @@ Is this productive iteration or a stuck loop?`,
       });
     }
 
-    await channel?.send(`${question}\n${choices.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}`, channelId).catch(() => {});
+    await channel?.send(`${question}\n${choices.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}`, channelId).catch((e) => logger.warn({ e }, 'channel send failed'));
     return choices[0];
   }
 
